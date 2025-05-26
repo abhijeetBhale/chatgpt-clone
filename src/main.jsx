@@ -8,20 +8,25 @@ import Dashboardpage from './routes/dashboardpage/dashboardpage'
 import Chatpage from './routes/chatpage/chatpage'
 import RootLayout from './layouts/rootLayout/rootLayout'
 import DashboardLayout from './layouts/dashboardLayouts/dashboardLayout'
+import SignInPage from './routes/signInPage/signInPage'
+import SignUpPage from './routes/signUpPage/signUpPage'
+
 
 const router = createBrowserRouter([
   {
-    element: <RootLayout/>,
+    element: <RootLayout />,
     children: [
-      { path: '/', element: <Homepage/> },
+      { path: '/', element: <Homepage /> },
+      { path: '/sign-in/*', element: <SignInPage /> },
+      { path: '/sign-up/*', element: <SignUpPage /> },
       {
-        element: <DashboardLayout/>,
+        element: <DashboardLayout />,
         children: [{
           path: '/dashboard',
-          element: <Dashboardpage/>,
-        },{
+          element: <Dashboardpage />,
+        }, {
           path: '/dashboard/chats/:id',
-          element: <Chatpage/>,
+          element: <Chatpage />,
         }]
       }
     ],
@@ -30,6 +35,6 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <RouterProvider router={router}/>
+    <RouterProvider router={router} />
   </React.StrictMode>,
 )
