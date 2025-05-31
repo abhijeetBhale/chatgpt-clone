@@ -59,7 +59,7 @@ const NewPrompt = () => {
     const text = e.target.text.value;
     if (!text) return;
 
-    add(text)
+    add(text);
   }
   return (
     <>

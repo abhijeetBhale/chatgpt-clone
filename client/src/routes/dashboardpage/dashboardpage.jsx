@@ -1,13 +1,22 @@
 import './dashboardpage.css'
-
+import {useAuth} from "@clerk/clerk-react"
 const Dashboardpage = () => {
+
+  const {userId} = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const text = e.target.text.value;
     if (!text) return;
 
-    mutation.mutate(text);
+    await fetch("http://localhost:3000/api/chats",{
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userId, text }),
+    });
+    // mutation.mutate(text);
   };
 
   return (
