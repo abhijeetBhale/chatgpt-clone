@@ -5,7 +5,6 @@ import { useState } from "react";
 
 const Homepage = () => {
   const [typingStatus, setTypingStatus] = useState("human1");
-
   return (
     <div className="homepage">
       <img src="/orbital.png" alt="" className="orbital" />
@@ -30,8 +29,8 @@ const Homepage = () => {
                 typingStatus === "human1"
                   ? "/human1.jpeg"
                   : typingStatus === "human1"
-                  ? "/human1.jpeg"
-                  : "bot.png"
+                    ? "/human1.jpeg"
+                    : "bot.png"
               }
               alt=""
             />

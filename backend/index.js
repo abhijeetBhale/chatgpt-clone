@@ -4,6 +4,7 @@ import cors from "cors";
 import mongoose from "mongoose";
 import Chat from "./models/chat.js";
 import UserChats from "./models/userChats.js";
+import { ClerkExpressRequireAuth } from "@clerk/clerk-sdk-node";
 
 const port = process.env.PORT || 3000;
 const app = express();
@@ -11,6 +12,7 @@ const app = express();
 app.use(
   cors({
     origin: process.env.CLIENT_URL,
+    credentials: true, 
   })
 );
 
@@ -35,39 +37,60 @@ app.get("/api/upload", (req, res) => {
   res.send(result);
 });
 
-app.post("/api/chats", async (req, res) => {
-  const { userId, text } = req.body;
+app.post("/api/chats", ClerkExpressRequireAuth(), async (req, res) => {
+  const userId = req.auth.userId;
+  const { text } = req.body;
+
   try {
     // CREATE A NEW CHAT
     const newChat = new Chat({
       userId: userId,
       history: [{ role: "user", parts: [{ text }] }],
     });
+
     const savedChat = await newChat.save();
 
+    // CHECK IF THE USERCHATS EXISTS
     const userChats = await UserChats.find({ userId: userId });
 
+    // IF DOESN'T EXIST CREATE A NEW ONE AND ADD THE CHAT IN THE CHATS ARRAY
     if (!userChats.length) {
       const newUserChats = new UserChats({
         userId: userId,
-        chats: [{ _id: savedChat._id, title: text.substring(0, 40) }],
+        chats: [
+          {
+            _id: savedChat._id,
+            title: text.substring(0, 40),
+          },
+        ],
       });
+
       await newUserChats.save();
     } else {
+      // IF EXISTS, PUSH THE CHAT TO THE EXISTING ARRAY
       await UserChats.updateOne(
         { userId: userId },
         {
           $push: {
-            chats: { _id: savedChat._id, title: text.substring(0, 40) },
+            chats: {
+              _id: savedChat._id,
+              title: text.substring(0, 40),
+            },
           },
         }
       );
+
       res.status(201).send(newChat._id);
     }
   } catch (err) {
-    console.log(text);
-    res.status(500).send("Database connection failed");
+    console.log(err);
+    res.status(500).send("Error creating chat!");
   }
+});
+
+app.use((err,req, res, next) => {
+  console.error(err.stack);
+  res.status(401).send('Unauthorized!');
 });
 
 app.listen(port, () => {
