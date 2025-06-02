@@ -2,22 +2,34 @@ import './dashboardpage.css'
 import {useAuth} from "@clerk/clerk-react"
 const Dashboardpage = () => {
 
-  const {userId} = useAuth();
+  const {userId, getToken} = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const text = e.target.text.value;
     if (!text) return;
 
-    await fetch("http://localhost:3000/api/chats",{
+  //   await fetch("http://localhost:3000/api/chats",{
+  //     method: "POST",
+  //     credentials: "include",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //     body: JSON.stringify({ text }),
+  //   });
+  //   // mutation.mutate(text);
+  // };
+
+  const token = await getToken(); // ✅ Get Clerk session token
+
+    await fetch("http://localhost:3000/api/chats", {
       method: "POST",
-      credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`, // ✅ Critical fix
       },
       body: JSON.stringify({ text }),
     });
-    // mutation.mutate(text);
   };
 
   return (
