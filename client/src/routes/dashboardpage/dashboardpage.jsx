@@ -1,35 +1,44 @@
-import './dashboardpage.css'
-import {useAuth} from "@clerk/clerk-react"
-const Dashboardpage = () => {
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@clerk/clerk-react"; // 👈 import this
+import { useNavigate } from "react-router-dom";
+import './dashboardpage.css';
 
-  const {userId, getToken} = useAuth();
+const DashboardPage = () => {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { getToken } = useAuth(); // 👈 get the function to fetch JWT
+
+  const mutation = useMutation({
+    mutationFn: async (text) => {
+      const token = await getToken(); // 👈 fetch Clerk JWT token
+
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/chats`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // 👈 send token
+        },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to create chat");
+      }
+
+      return await res.json(); // expecting `newChat._id` from backend
+    },
+    onSuccess: (id) => {
+      queryClient.invalidateQueries({ queryKey: ["userChats"] });
+      navigate(`/dashboard/chats/${id}`);
+    },
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const text = e.target.text.value;
     if (!text) return;
 
-  //   await fetch("http://localhost:3000/api/chats",{
-  //     method: "POST",
-  //     credentials: "include",
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //     },
-  //     body: JSON.stringify({ text }),
-  //   });
-  //   // mutation.mutate(text);
-  // };
-
-  const token = await getToken(); // ✅ Get Clerk session token
-
-    await fetch("http://localhost:3000/api/chats", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`, // ✅ Critical fix
-      },
-      body: JSON.stringify({ text }),
-    });
+    mutation.mutate(text);
   };
 
   return (
@@ -63,7 +72,7 @@ const Dashboardpage = () => {
         </form>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Dashboardpage
+export default DashboardPage;
