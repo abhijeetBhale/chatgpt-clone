@@ -1,4 +1,5 @@
 import './chatpage.css'
+import React from 'react';
 import NewPrompt from '../../components/newPrompt/newPrompt';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@clerk/clerk-react';
@@ -13,7 +14,7 @@ const Chatpage = () => {
   const { getToken } = useAuth();
 
   const { isPending, error, data } = useQuery({
-     queryKey: ["chat", chatId],
+    queryKey: ["chat", chatId],
     queryFn: async () => {
       const token = await getToken(); // get Clerk token
 
@@ -36,9 +37,9 @@ const Chatpage = () => {
           {isPending
             ? "Loading..."
             : error
-            ? "Something went wrong!"
-            : data?.history?.map((message, i) => (
-                <>
+              ? "Something went wrong!"
+              : data?.history?.map((message, i) => (
+                <React.Fragment key={i}>
                   {message.img && (
                     <IKImage
                       urlEndpoint={import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT}
@@ -54,14 +55,13 @@ const Chatpage = () => {
                     className={
                       message.role === "user" ? "message user" : "message"
                     }
-                    key={i}
                   >
                     <Markdown>{message.parts[0].text}</Markdown>
                   </div>
-                </>
+                </React.Fragment>
               ))}
 
-          {data && <NewPrompt data={data}/>}
+          {data && <NewPrompt data={data} />}
         </div>
       </div>
     </div>

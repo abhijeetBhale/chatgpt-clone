@@ -1,8 +1,8 @@
 import express from "express";
 import ImageKit from "imagekit";
 import cors from "cors";
-import path from "path";
-import url, { fileURLToPath } from "url";
+// import path from "path";
+// import url, { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import Chat from "./models/chat.js";
 import UserChats from "./models/userChats.js";
@@ -11,8 +11,8 @@ import { ClerkExpressRequireAuth } from "@clerk/clerk-sdk-node";
 const port = process.env.PORT || 3000;
 const app = express();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
 
 app.use(
   cors({
@@ -154,11 +154,11 @@ app.use((err,req, res, next) => {
   res.status(401).send('Unauthorized!');
 });
 
-app.use(express.static(path.join(__dirname, "../client/dist")));
+// app.use(express.static(path.join(__dirname, "../client/dist")));
 
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../client/dist", "index.html"));
-});
+// app.get("*", (_req, res) => {
+//   res.sendFile(path.join(__dirname, "../client/dist", "index.html"));
+// });
 
 app.listen(port, () => {
   connect();
