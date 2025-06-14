@@ -38,7 +38,13 @@
 - Express.js  
 - MongoDB with Mongoose  
 - Clerk SDK for secure API routes  
-- ImageKit SDK for image uploads  
+- ImageKit SDK for image uploads
+  
+---
+
+## 📸 Screenshot
+
+![Boost AI Chat](https://github.com/abhijeetBhale/Portfolio/blob/058af283a0133c9718137c82755af89a34f5b30b/assets/Boost_AI%20SS.png)
 
 ---
 
@@ -49,3 +55,4 @@
 ```bash
 git clone https://github.com/your-username/boost-ai.git
 cd boost-ai
+
