@@ -3,6 +3,7 @@ import ImageKit from "imagekit";
 import cors from "cors";
 // import path from "path";
 // import url, { fileURLToPath } from "url";
+import dotenv from "dotenv";
 import mongoose from "mongoose";
 import Chat from "./models/chat.js";
 import UserChats from "./models/userChats.js";
@@ -13,6 +14,7 @@ const app = express();
 
 // const __filename = fileURLToPath(import.meta.url);
 // const __dirname = path.dirname(__filename);
+dotenv.config();
 
 app.use(
   cors({
