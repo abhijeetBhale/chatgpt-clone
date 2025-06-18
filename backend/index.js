@@ -9,16 +9,24 @@ import Chat from "./models/chat.js";
 import UserChats from "./models/userChats.js";
 import { ClerkExpressRequireAuth } from "@clerk/clerk-sdk-node";
 
+// Load environment variables first
+dotenv.config();
+
+// Configure Clerk with secret key
+const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY;
+if (!CLERK_SECRET_KEY) {
+  console.error("Missing CLERK_SECRET_KEY environment variable");
+  process.exit(1);
+}
+
 const port = process.env.PORT || 3000;
 const app = express();
 
 // const __filename = fileURLToPath(import.meta.url);
 // const __dirname = path.dirname(__filename);
-dotenv.config();
-
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: [process.env.CLIENT_URL, "http://localhost:5173"],
     credentials: true, 
   })
 );
