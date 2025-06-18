@@ -26,7 +26,12 @@ const app = express();
 // const __dirname = path.dirname(__filename);
 app.use(
   cors({
-    origin: [process.env.CLIENT_URL, "http://localhost:5173", "https://chatgpt-clone-production.up.railway.app"],
+    origin: [
+      process.env.CLIENT_URL, 
+      "http://localhost:5173", 
+      "https://chatgpt-clone-production.up.railway.app",
+      "https://your-frontend-app-name.up.railway.app" // Replace with your actual frontend Railway URL
+    ],
     credentials: true, 
   })
 );
