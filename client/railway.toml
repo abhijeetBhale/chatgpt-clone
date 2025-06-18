@@ -1,0 +1,11 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "npm run start"
+healthcheckPath = "/"
+healthcheckTimeout = 100
+
+[deploy.restartPolicy]
+type = "on_failure"
+maxRetries = 3 
