@@ -26,12 +26,21 @@ const app = express();
 // const __dirname = path.dirname(__filename);
 app.use(
   cors({
-    origin: [process.env.CLIENT_URL, "http://localhost:5173"],
+    origin: [process.env.CLIENT_URL, "http://localhost:5173", "https://chatgpt-clone-production.up.railway.app"],
     credentials: true, 
   })
 );
 
 app.use(express.json());
+
+// Health check route
+app.get("/", (req, res) => {
+  res.json({ 
+    message: "AI Chat Backend is running!", 
+    status: "healthy",
+    timestamp: new Date().toISOString()
+  });
+});
 
 const connect = async () => {
   try {
