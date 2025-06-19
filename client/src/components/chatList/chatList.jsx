@@ -11,7 +11,7 @@ const ChatList = () => {
     queryFn: async () => {
       const token = await getToken(); // get Clerk token
 
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/userchats`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api/userchats`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
