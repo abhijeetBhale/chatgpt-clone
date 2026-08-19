@@ -37,3 +37,4 @@ migration/exports/
 *.njsproj
 *.sln
 *.sw?
+backend/.env

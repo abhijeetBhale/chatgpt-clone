@@ -25,11 +25,11 @@ const DashboardPage = () => {
         throw new Error("Failed to create chat");
       }
 
-      return await res.json(); // expecting `newChat._id` from backend
+      return await res.json();
     },
-    onSuccess: (id) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["userChats"] });
-      navigate(`/dashboard/chats/${id}`);
+      navigate(`/dashboard/chats/${data._id}`);
     },
   });
 
