@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: boost-ai-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: CLIENT_URL
+        value: https://boost-ai-chat.vercel.app
+      - key: IMAGEKIT_URL_ENDPOINT
+        sync: false
+      - key: IMAGEKIT_URL_PUBLIC_KEY
+        sync: false
+      - key: IMAGEKIT_URL_PRIVATE_KEY
+        sync: false
