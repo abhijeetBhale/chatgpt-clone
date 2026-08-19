@@ -12,6 +12,21 @@ dist
 dist-ssr
 *.local
 .env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+
+# Migration exports
+migration/exports/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
