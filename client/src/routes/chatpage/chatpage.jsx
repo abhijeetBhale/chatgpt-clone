@@ -1,5 +1,5 @@
 import './chatpage.css';
-import React from 'react';
+import React, { useState } from 'react';
 import NewPrompt from '../../components/newPrompt/newPrompt';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth, useUser } from '@clerk/clerk-react';
@@ -14,6 +14,13 @@ const Chatpage = () => {
   const { getToken } = useAuth();
   const { user } = useUser();
   const userAvatar = user?.imageUrl;
+
+  const [liveMessages, setLiveMessages] = useState({
+    question: "",
+    answer: "",
+    isThinking: false,
+    img: { isLoading: false, error: "", dbData: {}, aiData: {} },
+  });
 
   const { isPending, error, data } = useQuery({
     queryKey: ["chat", chatId],
@@ -87,9 +94,60 @@ const Chatpage = () => {
             ))
           )}
 
-          {data && <NewPrompt data={data} />}
+          {liveMessages.img.isLoading && <div className="loadingImage">Uploading asset...</div>}
+          {liveMessages.img.dbData?.filePath && (
+            <div className="message-wrapper user">
+              <div className="message-avatar">
+                <img src={userAvatar || "/human1.jpeg"} alt="You" />
+              </div>
+              <div className="messageImageContainer">
+                <IKImage
+                  urlEndpoint={import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT}
+                  path={liveMessages.img.dbData?.filePath}
+                  width="380"
+                  transformation={[{ width: 380 }]}
+                />
+              </div>
+            </div>
+          )}
+          {liveMessages.question && (
+            <div className="message-wrapper user">
+              <div className="message-avatar">
+                <img src={userAvatar || "/human1.jpeg"} alt="You" />
+              </div>
+              <div className="message">{liveMessages.question}</div>
+            </div>
+          )}
+          {liveMessages.isThinking && !liveMessages.answer && (
+            <div className="message-wrapper ai">
+              <div className="message-avatar">
+                <img src="/logo.png" alt="Boost AI" />
+              </div>
+              <div className="thinking-content">
+                <div className="thinking-dots">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </div>
+            </div>
+          )}
+          {liveMessages.answer && (
+            <div className="message-wrapper ai">
+              <div className="message-avatar">
+                <img src="/logo.png" alt="Boost AI" />
+              </div>
+              <div className="message">
+                <Markdown>{liveMessages.answer}</Markdown>
+              </div>
+            </div>
+          )}
+
+          <div className="endChat"></div>
         </div>
       </div>
+
+      {data && <NewPrompt data={data} onMessagesChange={setLiveMessages} />}
     </div>
   );
 };

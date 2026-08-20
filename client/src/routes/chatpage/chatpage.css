@@ -21,12 +21,12 @@
   width: 100%;
   margin: 0 auto;
   display: flex;
-  padding: var(--spacing-xl) var(--spacing-lg) 140px var(--spacing-lg);
+  padding: var(--spacing-xl) var(--spacing-lg);
   flex-direction: column;
   gap: var(--spacing-lg);
 
   @media screen and (max-width: 768px) {
-    padding: var(--spacing-md) var(--spacing-md) 130px var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-md);
   }
 }
 
@@ -100,13 +100,56 @@
 
 .message-wrapper {
   display: flex;
+  width: 100%;
   gap: var(--spacing-sm);
   align-items: flex-start;
-  animation: fadeInUp 0.3s var(--transition-normal);
+  opacity: 0;
+  will-change: transform, opacity;
+  animation: messageIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .message-wrapper.user {
   flex-direction: row-reverse;
+  justify-content: flex-start;
+  animation-name: userMessageIn;
+}
+
+.message-wrapper.ai {
+  justify-content: flex-start;
+  animation-name: aiMessageIn;
+}
+
+@keyframes userMessageIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateX(0);
+  }
+}
+
+@keyframes aiMessageIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateX(0);
+  }
+}
+
+@keyframes messageIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* User Message Bubble - xAI Dark Card (#191919) */
@@ -117,6 +160,7 @@
   padding: 12px 18px;
   max-width: 78%;
   color: var(--color-ink);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 /* AI Message Bubble - xAI Canvas Soft Card (#1a1c20) */
@@ -127,6 +171,7 @@
   padding: 14px 20px;
   max-width: 84%;
   color: var(--color-body);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .messageImageContainer {
@@ -172,4 +217,9 @@
 
 .message-wrapper.user .message-avatar {
   border: 1px solid var(--color-hairline);
+}
+
+.endChat {
+  min-height: 20px;
+  flex-shrink: 0;
 }

@@ -28,15 +28,6 @@ const RootLayout = () => {
               <span className="versionBadge">xAI ENGINE</span>
             </div>
 
-            <nav className="headerNav">
-              <Link to="/dashboard" className="navLink">
-                Dashboard
-              </Link>
-              <a href="https://github.com" target="_blank" rel="noreferrer" className="navLink desktopOnly">
-                Docs
-              </a>
-            </nav>
-
             <div className="userCluster">
               <SignedIn>
                 <UserButton 
