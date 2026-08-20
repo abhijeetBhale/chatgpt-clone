@@ -1,15 +1,97 @@
 .dashboardLayout {
   display: flex;
-  gap: 50px;
-  padding-top: 20px;
   height: 100%;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-canvas);
+}
 
-  .menu {
-    flex: 1;
-  }
+.dashboardLoading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  height: 100%;
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-muted);
+  background-color: var(--color-canvas);
+}
 
-  .content {
-    flex: 4;
-    background-color: #12101b;
+.loadingSpinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--color-hairline);
+  border-top-color: var(--color-accent-sunset);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.sidebarToggleBtn {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 40;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-canvas-card);
+  border: 1px solid var(--color-hairline);
+  color: var(--color-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.sidebarToggleBtn:hover {
+  background-color: var(--color-canvas-soft);
+  border-color: var(--color-hairline-translucent);
+}
+
+.toggleIcon {
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 500;
+  color: var(--color-body);
+}
+
+.dashboardLayout .menu {
+  width: 260px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--color-hairline);
+  background-color: var(--color-canvas);
+  overflow-y: auto;
+  transition: width var(--transition-smooth), margin-left var(--transition-smooth);
+  z-index: 30;
+
+  @media screen and (max-width: 768px) {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
   }
+}
+
+.dashboardLayout.sidebarCollapsed .menu {
+  width: 0px;
+  margin-left: -260px;
+  overflow: hidden;
+  border-right: none;
+}
+
+.dashboardLayout .content {
+  flex: 1;
+  height: 100%;
+  background-color: var(--color-canvas);
+  overflow: hidden;
+  position: relative;
 }

@@ -25,7 +25,7 @@ const NewPrompt = ({ data }) => {
   const userAvatar = user?.imageUrl;
 
   useEffect(() => {
-    endRef.current.scrollIntoView({ behavior: "smooth" });
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [data, question, answer, img.dbData, isThinking]);
 
   const queryClient = useQueryClient();
@@ -59,7 +59,7 @@ const NewPrompt = ({ data }) => {
         queryClient.invalidateQueries({ queryKey: ["chat", data._id] }),
         queryClient.invalidateQueries({ queryKey: ["userChats"] }),
       ]).then(() => {
-          formRef.current.reset();
+          formRef.current?.reset();
           setQuestion("");
           setAnswer("");
           setIsThinking(false);
@@ -156,13 +156,13 @@ const NewPrompt = ({ data }) => {
 
   return (
     <>
-      {img.isLoading && <div className="loading">Loading image...</div>}
+      {img.isLoading && <div className="loadingImage">Uploading asset...</div>}
       {img.dbData?.filePath && (
         <div className="message-wrapper user">
           <div className="message-avatar">
-            <img src={userAvatar} alt="You" />
+            <img src={userAvatar || "/human1.jpeg"} alt="You" />
           </div>
-          <div className="message-with-image">
+          <div className="messageImageContainer">
             <IKImage
               urlEndpoint={import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT}
               path={img.dbData?.filePath}
@@ -176,7 +176,7 @@ const NewPrompt = ({ data }) => {
       {question && (
         <div className="message-wrapper user">
           <div className="message-avatar">
-            <img src={userAvatar} alt="You" />
+            <img src={userAvatar || "/human1.jpeg"} alt="You" />
           </div>
           <div className="message">{question}</div>
         </div>
@@ -214,9 +214,9 @@ const NewPrompt = ({ data }) => {
         <form onSubmit={handleSubmit} ref={formRef}>
           <Upload setImg={setImg} />
           <input id="file" type="file" multiple={false} hidden />
-          <input type="text" name="text" placeholder="Ask anything..." />
-          <button type="submit" disabled={isThinking}>
-            <img src="/arrow.png" alt="" />
+          <input type="text" name="text" placeholder="Ask anything or request assistance..." autoFocus />
+          <button type="submit" disabled={isThinking} aria-label="Send message">
+            <span className="sendIcon">↑</span>
           </button>
         </form>
       </div>

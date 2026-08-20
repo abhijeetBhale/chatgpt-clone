@@ -1,41 +1,181 @@
-.endChat{
-  padding-bottom: 100px;
+.endChat {
+  padding-bottom: 120px;
 }
-  .newForm{
-    width: 50%;
-    margin-bottom: 20px;
-    position: absolute;
-    bottom: 0;
-    background-color: #2c2937;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    padding: 0px 20px;
 
+.loadingImage {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-muted);
+  font-style: italic;
+  padding: var(--spacing-sm);
+  text-align: center;
+}
 
-    input{
-      flex:1;
-      padding:20px;
-      border: none;
-      outline: none;
-      background-color: transparent;
-      color: #ececec;
-    }
+/* AI Message Bubble & Thinking Indicator */
+.message-wrapper.ai .message {
+  background-color: var(--color-canvas-soft);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-sm);
+  padding: 14px 20px;
+  max-width: 84%;
+  color: var(--color-body);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+}
 
-    button,label{
-      border-radius: 50%;
-      background-color: #605e68;
-      border: none;
-      padding: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
+.message-wrapper.ai .thinking-content {
+  background-color: var(--color-canvas-soft);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-sm);
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+}
 
-      img{
-        width: 16px;
-        height: 16px;
-      }
-    }
+.thinking-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.thinking-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-accent-sunset);
+  animation: thinkingPulse 1.4s ease-in-out infinite;
+}
+
+.thinking-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.thinking-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes thinkingPulse {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.4;
   }
+  40% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+/* Floating Input Form Bar - Pill Shape */
+.newForm {
+  width: min(840px, calc(100% - 48px));
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--color-canvas-card);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-pill);
+  z-index: 20;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+
+  @media screen and (max-width: 768px) {
+    width: calc(100% - 24px);
+    bottom: 12px;
+  }
+}
+
+.newForm:focus-within {
+  border-color: var(--color-accent-sunset);
+  box-shadow: var(--shadow-sunset-glow);
+}
+
+.newForm form {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 6px 10px 6px 18px;
+}
+
+.newForm input[type="text"] {
+  flex: 1;
+  padding: 10px 0;
+  border: none;
+  outline: none;
+  background-color: transparent;
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: 15.5px;
+}
+
+.newForm input[type="text"]::placeholder {
+  color: var(--color-muted);
+}
+
+.newForm button[type="submit"] {
+  border-radius: var(--radius-pill);
+  background-color: var(--color-accent-sunset);
+  color: #ffffff;
+  border: none;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.newForm button[type="submit"]:disabled {
+  background-color: var(--color-canvas-soft);
+  color: var(--color-muted);
+  cursor: not-allowed;
+}
+
+.newForm button[type="submit"]:not(:disabled):hover {
+  background-color: var(--color-accent-sunset-soft);
+  color: var(--color-on-primary);
+  transform: scale(1.05);
+}
+
+.newForm button[type="submit"]:not(:disabled):active {
+  transform: scale(0.95);
+}
+
+.sendIcon {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Upload attachment button contrast */
+.newForm label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-canvas-soft);
+  border: 1px solid var(--color-hairline);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+
+  img {
+    width: 15px;
+    height: 15px;
+    filter: brightness(0) invert(1);
+    opacity: 0.75;
+    transition: opacity var(--transition-fast);
+  }
+}
+
+.newForm label:hover {
+  background-color: var(--color-canvas-mid);
+
+  img {
+    opacity: 1;
+  }
+}

@@ -1,38 +1,71 @@
-import { Link, Outlet } from 'react-router-dom'
-import './rootLayout.css'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ClerkProvider, SignedIn, UserButton } from '@clerk/clerk-react'
+import { Link, Outlet } from 'react-router-dom';
+import './rootLayout.css';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ClerkProvider, SignedIn, SignedOut, UserButton, SignInButton } from '@clerk/clerk-react';
 
-const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
+const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 if (!PUBLISHABLE_KEY) {
-  throw new Error('Missing Publishable Key')
+  throw new Error('Missing Publishable Key');
 }
 
 const queryClient = new QueryClient();
 
 const RootLayout = () => {
   return (
-    <ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignOutUrl='/'>
+    <ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignOutUrl="/">
       <QueryClientProvider client={queryClient}>
-        <div className='rootLayout'>
-          <header>
-            <Link to="/" className='logo'>
-              <img src="/logo.png" alt="" />
-              <span>Boost AI</span>
-            </Link>
-            <div className="user">
+        <div className="rootLayout">
+          <header className="rootHeader">
+            <div className="logoCluster">
+              <Link to="/" className="logo">
+                <div className="logoBadge">
+                  <img src="/logo.png" alt="Boost AI Logo" />
+                </div>
+                <span className="brandName">Boost AI</span>
+                <span className="sparkle">✦</span>
+              </Link>
+              <span className="versionBadge">xAI ENGINE</span>
+            </div>
+
+            <nav className="headerNav">
+              <Link to="/dashboard" className="navLink">
+                Dashboard
+              </Link>
+              <a href="https://github.com" target="_blank" rel="noreferrer" className="navLink desktopOnly">
+                Docs
+              </a>
+            </nav>
+
+            <div className="userCluster">
               <SignedIn>
-                <UserButton />
-              </SignedIn></div>
+                <UserButton 
+                  appearance={{
+                    elements: {
+                      userButtonAvatarBox: {
+                        width: '34px',
+                        height: '34px',
+                        borderRadius: '50%',
+                        border: '1px solid var(--color-hairline-translucent)'
+                      }
+                    }
+                  }} 
+                />
+              </SignedIn>
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <button className="signInPill">Sign In</button>
+                </SignInButton>
+              </SignedOut>
+            </div>
           </header>
-          <main>
+          <main className="rootMain">
             <Outlet />
           </main>
         </div>
       </QueryClientProvider>
     </ClerkProvider>
-  )
-}
+  );
+};
 
-export default RootLayout
+export default RootLayout;
