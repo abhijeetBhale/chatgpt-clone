@@ -22,11 +22,13 @@
   margin: 0 auto;
   display: flex;
   padding: var(--spacing-xl) var(--spacing-lg);
+  padding-bottom: 100px;
   flex-direction: column;
   gap: var(--spacing-lg);
 
   @media screen and (max-width: 768px) {
     padding: var(--spacing-md) var(--spacing-md);
+    padding-bottom: 100px;
   }
 }
 

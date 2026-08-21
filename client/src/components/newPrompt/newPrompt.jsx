@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "./newPrompt.css";
 import Upload from "../upload/upload";
 import { IKImage } from "imagekitio-react";
@@ -6,7 +6,7 @@ import Markdown from "react-markdown";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth, useUser } from "@clerk/clerk-react";
 
-const NewPrompt = ({ data, onMessagesChange }) => {
+const NewPrompt = ({ data, onFormReady }) => {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [isThinking, setIsThinking] = useState(false);
@@ -136,8 +136,60 @@ const NewPrompt = ({ data, onMessagesChange }) => {
     }
   }, [data]);
 
+  useEffect(() => {
+    if (onFormReady) {
+      onFormReady({ handleSubmit, formRef, isThinking, img, setImg, userAvatar });
+    }
+  }, [isThinking, img, userAvatar]);
+
   return (
     <>
+      {data?.history?.map((message, i) => (
+        <React.Fragment key={i}>
+          {message.img && (
+            <div className="message-wrapper user">
+              <div className="message-avatar">
+                <img src={userAvatar || "/human1.jpeg"} alt="You" />
+              </div>
+              <div className="messageImageContainer">
+                <IKImage
+                  urlEndpoint={import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT}
+                  path={message.img}
+                  height="300"
+                  width="400"
+                  transformation={[{ height: 300, width: 400 }]}
+                  loading="lazy"
+                  lqip={{ active: true, quality: 20 }}
+                />
+              </div>
+            </div>
+          )}
+          <div
+            className={
+              message.role === "user"
+                ? "message-wrapper user"
+                : "message-wrapper ai"
+            }
+          >
+            <div className="message-avatar">
+              <img
+                src={message.role === "user" ? (userAvatar || "/human1.jpeg") : "/logo.png"}
+                alt={message.role === "user" ? "You" : "AI"}
+              />
+            </div>
+            {message.role === "user" ? (
+              <div className="message">
+                <Markdown>{message.parts[0].text}</Markdown>
+              </div>
+            ) : (
+              <div className="message">
+                <Markdown>{message.parts[0].text}</Markdown>
+              </div>
+            )}
+          </div>
+        </React.Fragment>
+      ))}
+
       {img.isLoading && <div className="loadingImage">Uploading asset...</div>}
       {img.dbData?.filePath && (
         <div className="message-wrapper user">
@@ -191,17 +243,6 @@ const NewPrompt = ({ data, onMessagesChange }) => {
       )}
 
       <div className="endChat" ref={endRef}></div>
-
-      <div className="newForm">
-        <form onSubmit={handleSubmit} ref={formRef}>
-          <Upload setImg={setImg} />
-          <input id="file" type="file" multiple={false} hidden />
-          <input type="text" name="text" placeholder="Ask anything or request assistance..." autoFocus />
-          <button type="submit" disabled={isThinking} aria-label="Send message">
-            <span className="sendIcon">↑</span>
-          </button>
-        </form>
-      </div>
     </>
   );
 };
