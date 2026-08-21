@@ -15,6 +15,7 @@ from schemas import (
 from services.auth import get_current_user_id
 from services.groq_title import generate_chat_title
 from services.groq_chat import stream_chat_response
+from services.cache import cache
 
 router = APIRouter(prefix="/api/chats", tags=["chats"])
 
@@ -25,7 +26,6 @@ async def create_chat(
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    """Create a new chat with the user's first message."""
     chat_title = body.text[:40] if body.text else "New Chat"
 
     new_chat = Chat(
@@ -43,6 +43,8 @@ async def create_chat(
     db.add(user_chat_entry)
     await db.flush()
 
+    await cache.delete("userchats", user_id)
+
     return {"_id": str(new_chat.id)}
 
 
@@ -52,7 +54,11 @@ async def get_chat(
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get a single chat by ID (owner only)."""
+    cache_key = f"{user_id}:{chat_id}"
+    cached = await cache.get("chat", cache_key)
+    if cached:
+        return cached
+
     result = await db.execute(
         select(Chat).where(Chat.id == chat_id, Chat.user_id == user_id)
     )
@@ -61,7 +67,7 @@ async def get_chat(
     if not chat:
         raise HTTPException(status_code=404, detail="Chat not found")
 
-    return ChatResponse(
+    response = ChatResponse(
         id=chat.id,
         user_id=chat.user_id,
         history=chat.history,
@@ -72,6 +78,9 @@ async def get_chat(
         updated_at=chat.updated_at,
     ).to_frontend()
 
+    await cache.set("chat", cache_key, response)
+    return response
+
 
 @router.get("/shared/{chat_id}")
 async def get_shared_chat(
@@ -79,7 +88,10 @@ async def get_shared_chat(
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get a shared chat by ID (any authenticated user)."""
+    cached = await cache.get("shared_chat", str(chat_id))
+    if cached:
+        return cached
+
     result = await db.execute(
         select(Chat).where(Chat.id == chat_id, Chat.is_shared == True)
     )
@@ -88,7 +100,7 @@ async def get_shared_chat(
     if not chat:
         raise HTTPException(status_code=404, detail="Shared chat not found or not shared")
 
-    return ChatResponse(
+    response = ChatResponse(
         id=chat.id,
         user_id=chat.user_id,
         history=chat.history,
@@ -99,6 +111,9 @@ async def get_shared_chat(
         updated_at=chat.updated_at,
     ).to_frontend()
 
+    await cache.set("shared_chat", str(chat_id), response, ttl=600)
+    return response
+
 
 @router.put("/{chat_id}")
 async def update_chat(
@@ -107,7 +122,6 @@ async def update_chat(
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    """Add messages to a chat and auto-generate title after first exchange."""
     result = await db.execute(
         select(Chat).where(Chat.id == chat_id, Chat.user_id == user_id)
     )
@@ -142,6 +156,9 @@ async def update_chat(
                 .values(title=title)
             )
 
+    await cache.delete("chat", f"{user_id}:{chat_id}")
+    await cache.delete("userchats", user_id)
+
     return {"status": "ok"}
 
 
@@ -152,7 +169,6 @@ async def send_message(
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    """Send a message and stream the AI response via SSE."""
     result = await db.execute(
         select(Chat).where(Chat.id == chat_id, Chat.user_id == user_id)
     )
@@ -196,6 +212,8 @@ async def send_message(
                 )
                 await db.commit()
 
+            await cache.delete("chat", f"{user_id}:{chat_id}")
+
             yield "data: [DONE]\n\n"
         except Exception as e:
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
@@ -219,7 +237,6 @@ async def update_feedback(
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    """Update feedback (like/dislike) for a specific message."""
     result = await db.execute(
         select(Chat).where(Chat.id == chat_id, Chat.user_id == user_id)
     )
@@ -230,7 +247,7 @@ async def update_feedback(
 
     feedback = chat.feedback or {}
     message_key = str(body.message_index)
-    
+
     if body.feedback_type == "none":
         feedback.pop(message_key, None)
     else:
@@ -243,6 +260,8 @@ async def update_feedback(
     )
     await db.commit()
 
+    await cache.delete("chat", f"{user_id}:{chat_id}")
+
     return {"status": "ok", "feedback": feedback}
 
 
@@ -253,7 +272,6 @@ async def update_share_status(
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    """Update share status for a chat."""
     result = await db.execute(
         select(Chat).where(Chat.id == chat_id, Chat.user_id == user_id)
     )
@@ -267,15 +285,18 @@ async def update_share_status(
         .where(Chat.id == chat_id, Chat.user_id == user_id)
         .values(is_shared=body.is_shared)
     )
-    
-    # Also update UserChat entry
+
     await db.execute(
         update(UserChat)
         .where(UserChat.chat_id == chat_id, UserChat.user_id == user_id)
         .values(is_shared=body.is_shared)
     )
-    
+
     await db.commit()
+
+    await cache.delete("chat", f"{user_id}:{chat_id}")
+    await cache.delete("shared_chat", str(chat_id))
+    await cache.delete("userchats", user_id)
 
     return {"status": "ok", "is_shared": body.is_shared}
 
@@ -287,7 +308,6 @@ async def edit_message(
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    """Record an edited message and update history."""
     result = await db.execute(
         select(Chat).where(Chat.id == chat_id, Chat.user_id == user_id)
     )
@@ -296,7 +316,6 @@ async def edit_message(
     if not chat:
         raise HTTPException(status_code=404, detail="Chat not found")
 
-    # Add to edit history
     edit_history = chat.edit_history or []
     edit_entry = {
         "message_index": body.message_index,
@@ -306,7 +325,6 @@ async def edit_message(
     }
     edit_history.append(edit_entry)
 
-    # Update the message in history
     history = chat.history
     if 0 <= body.message_index < len(history):
         history[body.message_index]["parts"][0]["text"] = body.edited_text
@@ -317,5 +335,7 @@ async def edit_message(
         .values(history=history, edit_history=edit_history)
     )
     await db.commit()
+
+    await cache.delete("chat", f"{user_id}:{chat_id}")
 
     return {"status": "ok", "edit_history": edit_history}

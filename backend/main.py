@@ -7,10 +7,14 @@ from sqlalchemy import text
 from database import engine, Base
 from routes import api_router
 from settings import settings
+from services.cache import cache
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Initialize cache
+    await cache.connect()
+    
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         
@@ -29,6 +33,9 @@ async def lifespan(app: FastAPI):
         
     print("Database tables created and migrated")
     yield
+    
+    # Cleanup
+    await cache.disconnect()
     await engine.dispose()
 
 

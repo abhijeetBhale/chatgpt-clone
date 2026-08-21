@@ -6,6 +6,7 @@ from database import get_db
 from models import UserChat
 from schemas import UserChatEntry
 from services.auth import get_current_user_id
+from services.cache import cache
 
 router = APIRouter(prefix="/api/userchats", tags=["userchats"])
 
@@ -15,7 +16,10 @@ async def get_user_chats(
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get all chats for the authenticated user, sorted by newest first."""
+    cached = await cache.get("userchats", user_id)
+    if cached:
+        return cached
+
     result = await db.execute(
         select(UserChat)
         .where(UserChat.user_id == user_id)
@@ -23,7 +27,7 @@ async def get_user_chats(
     )
     entries = result.scalars().all()
 
-    return [
+    response = [
         UserChatEntry(
             id=entry.chat_id,
             title=entry.title,
@@ -32,3 +36,6 @@ async def get_user_chats(
         ).to_frontend()
         for entry in entries
     ]
+
+    await cache.set("userchats", user_id, response)
+    return response
