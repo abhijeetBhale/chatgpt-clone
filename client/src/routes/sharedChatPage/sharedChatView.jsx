@@ -1,4 +1,5 @@
-import './chatpage.css';
+import '../chatpage/chatpage.css';
+import './sharedChatPage.css';
 import React, { useEffect, useState } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
