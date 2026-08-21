@@ -11,8 +11,8 @@ const SharedChatPage = () => {
 
   useEffect(() => {
     if (isLoaded && userId) {
-      // User is logged in, redirect to the chat
-      navigate(`/dashboard/chats/${id}`, { replace: true });
+      // User is logged in, redirect to shared chat view
+      navigate(`/dashboard/shared/${id}`, { replace: true });
     }
   }, [isLoaded, userId, navigate, id]);
 
@@ -54,7 +54,7 @@ const SharedChatPage = () => {
             <SignIn 
               path="/sign-in" 
               signUpUrl="/sign-up" 
-              forceRedirectUrl={`/dashboard/chats/${id}`}
+              forceRedirectUrl={`/dashboard/shared/${id}`}
               routing="path"
             />
           </div>

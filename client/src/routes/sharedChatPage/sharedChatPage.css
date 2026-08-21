@@ -80,6 +80,21 @@
   justify-content: center;
 }
 
+.sharedChatBanner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background-color: rgba(255, 122, 23, 0.1);
+  border: 1px solid rgba(255, 122, 23, 0.2);
+  border-radius: var(--radius-sm);
+  color: var(--color-accent-sunset);
+  font-family: var(--font-body);
+  font-size: 13px;
+  margin-bottom: var(--spacing-md);
+}
+
 .sharedChatLoading {
   display: flex;
   align-items: center;

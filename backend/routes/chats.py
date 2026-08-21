@@ -52,7 +52,7 @@ async def get_chat(
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get a single chat by ID."""
+    """Get a single chat by ID (owner only)."""
     result = await db.execute(
         select(Chat).where(Chat.id == chat_id, Chat.user_id == user_id)
     )
@@ -68,6 +68,33 @@ async def get_chat(
         is_shared=chat.is_shared,
         feedback=chat.feedback,
         edit_history=chat.edit_history or [],
+        created_at=chat.created_at,
+        updated_at=chat.updated_at,
+    ).to_frontend()
+
+
+@router.get("/shared/{chat_id}")
+async def get_shared_chat(
+    chat_id: uuid.UUID,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get a shared chat by ID (any authenticated user)."""
+    result = await db.execute(
+        select(Chat).where(Chat.id == chat_id, Chat.is_shared == True)
+    )
+    chat = result.scalar_one_or_none()
+
+    if not chat:
+        raise HTTPException(status_code=404, detail="Shared chat not found or not shared")
+
+    return ChatResponse(
+        id=chat.id,
+        user_id=chat.user_id,
+        history=chat.history,
+        is_shared=chat.is_shared,
+        feedback={},
+        edit_history=[],
         created_at=chat.created_at,
         updated_at=chat.updated_at,
     ).to_frontend()

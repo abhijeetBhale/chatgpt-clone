@@ -7,6 +7,7 @@ import Homepage from './routes/homepage/homepage'
 import Dashboardpage from './routes/dashboardpage/dashboardpage'
 import Chatpage from './routes/chatpage/chatpage'
 import SharedChatPage from './routes/sharedChatPage/sharedChatPage'
+import SharedChatView from './routes/sharedChatPage/sharedChatView'
 import RootLayout from './layouts/rootLayout/rootLayout'
 import DashboardLayout from './layouts/dashboardLayouts/dashboardLayout'
 import SignInPage from './routes/signInPage/signInPage'
@@ -29,6 +30,9 @@ const router = createBrowserRouter([
         }, {
           path: '/dashboard/chats/:id',
           element: <Chatpage />,
+        }, {
+          path: '/dashboard/shared/:id',
+          element: <SharedChatView />,
         }]
       }
     ],
