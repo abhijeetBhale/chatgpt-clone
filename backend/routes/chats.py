@@ -1,5 +1,6 @@
 import uuid
 import json
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select, update
@@ -7,7 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from models import Chat, UserChat
-from schemas import CreateChatRequest, UpdateChatRequest, MessageRequest, ChatResponse
+from schemas import (
+    CreateChatRequest, UpdateChatRequest, MessageRequest,
+    FeedbackRequest, ShareRequest, EditMessageRequest, ChatResponse
+)
 from services.auth import get_current_user_id
 from services.groq_title import generate_chat_title
 from services.groq_chat import stream_chat_response
@@ -61,6 +65,9 @@ async def get_chat(
         id=chat.id,
         user_id=chat.user_id,
         history=chat.history,
+        is_shared=chat.is_shared,
+        feedback=chat.feedback,
+        edit_history=chat.edit_history or [],
         created_at=chat.created_at,
         updated_at=chat.updated_at,
     ).to_frontend()
@@ -176,3 +183,112 @@ async def send_message(
             "X-Accel-Buffering": "no",
         },
     )
+
+
+@router.put("/{chat_id}/feedback")
+async def update_feedback(
+    chat_id: uuid.UUID,
+    body: FeedbackRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update feedback (like/dislike) for a specific message."""
+    result = await db.execute(
+        select(Chat).where(Chat.id == chat_id, Chat.user_id == user_id)
+    )
+    chat = result.scalar_one_or_none()
+
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+
+    feedback = chat.feedback or {}
+    message_key = str(body.message_index)
+    
+    if body.feedback_type == "none":
+        feedback.pop(message_key, None)
+    else:
+        feedback[message_key] = body.feedback_type
+
+    await db.execute(
+        update(Chat)
+        .where(Chat.id == chat_id, Chat.user_id == user_id)
+        .values(feedback=feedback)
+    )
+    await db.commit()
+
+    return {"status": "ok", "feedback": feedback}
+
+
+@router.put("/{chat_id}/share")
+async def update_share_status(
+    chat_id: uuid.UUID,
+    body: ShareRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update share status for a chat."""
+    result = await db.execute(
+        select(Chat).where(Chat.id == chat_id, Chat.user_id == user_id)
+    )
+    chat = result.scalar_one_or_none()
+
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+
+    await db.execute(
+        update(Chat)
+        .where(Chat.id == chat_id, Chat.user_id == user_id)
+        .values(is_shared=body.is_shared)
+    )
+    
+    # Also update UserChat entry
+    await db.execute(
+        update(UserChat)
+        .where(UserChat.chat_id == chat_id, UserChat.user_id == user_id)
+        .values(is_shared=body.is_shared)
+    )
+    
+    await db.commit()
+
+    return {"status": "ok", "is_shared": body.is_shared}
+
+
+@router.put("/{chat_id}/edit")
+async def edit_message(
+    chat_id: uuid.UUID,
+    body: EditMessageRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """Record an edited message and update history."""
+    result = await db.execute(
+        select(Chat).where(Chat.id == chat_id, Chat.user_id == user_id)
+    )
+    chat = result.scalar_one_or_none()
+
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+
+    # Add to edit history
+    edit_history = chat.edit_history or []
+    edit_entry = {
+        "message_index": body.message_index,
+        "original_text": body.original_text,
+        "edited_text": body.edited_text,
+        "edited_at": datetime.now(timezone.utc).isoformat(),
+    }
+    edit_history.append(edit_entry)
+
+    # Update the message in history
+    history = chat.history
+    if 0 <= body.message_index < len(history):
+        history[body.message_index]["parts"][0]["text"] = body.edited_text
+
+    await db.execute(
+        update(Chat)
+        .where(Chat.id == chat_id, Chat.user_id == user_id)
+        .values(history=history, edit_history=edit_history)
+    )
+    await db.commit()
+
+    return {"status": "ok", "edit_history": edit_history}

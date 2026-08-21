@@ -27,6 +27,7 @@ async def get_user_chats(
         UserChatEntry(
             id=entry.chat_id,
             title=entry.title,
+            is_shared=entry.is_shared,
             created_at=entry.created_at,
         ).to_frontend()
         for entry in entries

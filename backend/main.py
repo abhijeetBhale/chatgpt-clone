@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timezone
+from sqlalchemy import text
 
 from database import engine, Base
 from routes import api_router
@@ -12,7 +13,21 @@ from settings import settings
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    print("Database tables created")
+        
+        # Run migrations for new columns
+        migrations = [
+            "ALTER TABLE chats ADD COLUMN IF NOT EXISTS is_shared BOOLEAN NOT NULL DEFAULT FALSE",
+            "ALTER TABLE chats ADD COLUMN IF NOT EXISTS feedback JSONB NOT NULL DEFAULT '{}'",
+            "ALTER TABLE chats ADD COLUMN IF NOT EXISTS edit_history JSONB NOT NULL DEFAULT '[]'",
+            "ALTER TABLE user_chats ADD COLUMN IF NOT EXISTS is_shared BOOLEAN NOT NULL DEFAULT FALSE",
+        ]
+        for migration in migrations:
+            try:
+                await conn.execute(text(migration))
+            except Exception:
+                pass  # Column already exists
+        
+    print("Database tables created and migrated")
     yield
     await engine.dispose()
 

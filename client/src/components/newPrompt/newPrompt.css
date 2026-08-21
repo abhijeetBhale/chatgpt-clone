@@ -7,13 +7,125 @@
   text-align: center;
 }
 
+/* Message Content Wrapper */
+.message-content-wrapper {
+  position: relative;
+  max-width: 84%;
+}
+
+.message-wrapper.user .message-content-wrapper {
+  max-width: 78%;
+}
+
+/* Message Actions */
+.message-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.message-content-wrapper:hover .message-actions {
+  opacity: 1;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.action-btn:hover {
+  background-color: var(--color-canvas-card);
+  color: var(--color-body);
+}
+
+.action-btn.active {
+  color: var(--color-accent-sunset);
+}
+
+.action-btn.active:hover {
+  background-color: rgba(255, 122, 23, 0.1);
+}
+
+/* Edit Mode */
+.message.editing {
+  padding: 0;
+}
+
+.edit-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px 16px;
+  background-color: var(--color-canvas-card);
+  border: 1px solid var(--color-accent-sunset);
+  border-radius: var(--radius-sm);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+}
+
+.edit-textarea:focus {
+  border-color: var(--color-accent-sunset);
+  box-shadow: 0 0 0 2px rgba(255, 122, 23, 0.2);
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.edit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.edit-btn.confirm {
+  background-color: var(--color-accent-sunset);
+  color: white;
+}
+
+.edit-btn.confirm:hover {
+  background-color: #e66a10;
+}
+
+.edit-btn.cancel {
+  background-color: var(--color-canvas-card);
+  color: var(--color-muted);
+}
+
+.edit-btn.cancel:hover {
+  background-color: var(--color-canvas-mid);
+  color: var(--color-body);
+}
+
 /* AI Message Bubble & Thinking Indicator */
 .message-wrapper.ai .message {
   background-color: var(--color-canvas-soft);
   border: 1px solid var(--color-hairline);
   border-radius: var(--radius-sm);
   padding: 14px 20px;
-  max-width: 84%;
+  max-width: 100%;
   color: var(--color-body);
   font-family: var(--font-body);
   font-size: 15px;
