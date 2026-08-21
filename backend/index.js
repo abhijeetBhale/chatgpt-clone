@@ -26,7 +26,7 @@ if (!GROQ_API_KEY) {
 const groq = new Groq({
   apiKey: GROQ_API_KEY || "",
 });
-const MODEL = "llama-3.3-70b-versatile";
+const MODEL = "openai/gpt-oss-120b";
 
 const port = process.env.PORT || 3000;
 const app = express();
@@ -273,11 +273,23 @@ app.post("/api/chats/:id/message", ClerkExpressRequireAuth(), async (req, res) =
     res.end();
   } catch (err) {
     console.error("Error streaming AI response:", err);
+    const errorMessage = "Sorry, I encountered an error generating a response. Please try again.";
     if (!res.headersSent) {
       res.status(500).send("Error streaming AI response!");
     } else {
-      res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+      res.write(`data: ${JSON.stringify({ content: errorMessage })}\n\n`);
+      res.write("data: [DONE]\n\n");
       res.end();
+    }
+    // Save error to chat history so it's not left incomplete
+    try {
+      const errorItem = { role: "model", parts: [{ text: errorMessage }] };
+      await Chat.updateOne(
+        { _id: req.params.id },
+        { $push: { history: errorItem } }
+      );
+    } catch (saveErr) {
+      console.error("Failed to save error to chat history:", saveErr);
     }
   }
 });

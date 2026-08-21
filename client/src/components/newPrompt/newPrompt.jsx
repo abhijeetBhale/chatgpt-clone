@@ -6,7 +6,7 @@ import Markdown from "react-markdown";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth, useUser } from "@clerk/clerk-react";
 
-const NewPrompt = ({ data }) => {
+const NewPrompt = ({ data, onMessagesChange }) => {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [isThinking, setIsThinking] = useState(false);
@@ -108,6 +108,7 @@ const NewPrompt = ({ data }) => {
     } catch (err) {
       console.error("Backend streaming error:", err);
       setIsThinking(false);
+      hasRun.current = false;
     }
   };
 
@@ -123,14 +124,13 @@ const NewPrompt = ({ data }) => {
   const hasRun = useRef(false);
 
   useEffect(() => {
-    if (!hasRun.current) {
-      if (
-        data?.history?.length === 1 &&
-        data.history[0]?.role === "user" &&
-        data.history[0]?.parts?.length > 0 &&
-        typeof data.history[0].parts[0].text === "string"
-      ) {
-        add(data.history[0].parts[0].text, true);
+    if (!hasRun.current && data?.history?.length > 0) {
+      const lastMessage = data.history[data.history.length - 1];
+      const isLastMessageUser = lastMessage?.role === "user";
+      const hasNoAiResponse = data.history.filter(m => m.role === "model").length === 0;
+
+      if (isLastMessageUser && hasNoAiResponse && lastMessage?.parts?.length > 0) {
+        add(lastMessage.parts[0].text, true);
       }
       hasRun.current = true;
     }

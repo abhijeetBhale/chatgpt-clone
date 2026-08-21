@@ -31,7 +31,7 @@ def _sync_stream(messages: list[dict], queue: asyncio.Queue, loop: asyncio.Abstr
     try:
         stream = groq_client.chat.completions.create(
             messages=messages,
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             stream=True,
         )
         for chunk in stream:
