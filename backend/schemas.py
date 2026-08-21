@@ -24,6 +24,11 @@ class UpdateChatRequest(BaseModel):
     img: Optional[str] = None
 
 
+class MessageRequest(BaseModel):
+    question: Optional[str] = None
+    img: Optional[str] = None
+
+
 class ChatResponse(BaseModel):
     id: uuid.UUID
     user_id: str

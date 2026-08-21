@@ -1,13 +1,16 @@
 import uuid
+import json
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from models import Chat, UserChat
-from schemas import CreateChatRequest, UpdateChatRequest, ChatResponse
+from schemas import CreateChatRequest, UpdateChatRequest, MessageRequest, ChatResponse
 from services.auth import get_current_user_id
 from services.groq_title import generate_chat_title
+from services.groq_chat import stream_chat_response
 
 router = APIRouter(prefix="/api/chats", tags=["chats"])
 
@@ -106,3 +109,70 @@ async def update_chat(
             )
 
     return {"status": "ok"}
+
+
+@router.post("/{chat_id}/message")
+async def send_message(
+    chat_id: uuid.UUID,
+    body: MessageRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """Send a message and stream the AI response via SSE."""
+    result = await db.execute(
+        select(Chat).where(Chat.id == chat_id, Chat.user_id == user_id)
+    )
+    chat = result.scalar_one_or_none()
+
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+
+    if body.question:
+        user_msg = {"role": "user", "parts": [{"text": body.question}]}
+        if body.img:
+            user_msg["img"] = body.img
+        updated_history = chat.history + [user_msg]
+        await db.execute(
+            update(Chat)
+            .where(Chat.id == chat_id, Chat.user_id == user_id)
+            .values(history=updated_history)
+        )
+        await db.commit()
+        await db.refresh(chat)
+
+    conversation_history = [
+        {"role": "assistant" if msg["role"] == "model" else "user", "content": msg["parts"][0].get("text", "")}
+        for msg in chat.history
+    ]
+
+    async def event_generator():
+        accumulated = ""
+        try:
+            async for chunk in stream_chat_response(conversation_history):
+                accumulated += chunk
+                yield f"data: {json.dumps({'content': chunk})}\n\n"
+
+            if accumulated:
+                ai_msg = {"role": "model", "parts": [{"text": accumulated}]}
+                new_history = chat.history + [ai_msg]
+                await db.execute(
+                    update(Chat)
+                    .where(Chat.id == chat_id, Chat.user_id == user_id)
+                    .values(history=new_history)
+                )
+                await db.commit()
+
+            yield "data: [DONE]\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            yield "data: [DONE]\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )

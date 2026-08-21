@@ -14,7 +14,6 @@
     "@clerk/clerk-react": "^5.31.6",
     "@google/generative-ai": "^0.24.1",
     "@tanstack/react-query": "^5.79.0",
-    "groq-sdk": "^1.5.0",
     "imagekitio-react": "^4.3.0",
     "ogl": "^1.0.11",
     "react": "^18.3.1",
