@@ -37,3 +37,9 @@ Thumbs.db
 
 # Migration exports
 backend/migration/exports/
+
+# Design docs (internal planning, not for public repo)
+DESIGN-x.ai.md
+DESIGN-vercel.md
+DESIGN-claude.md
+UI-REDESIGN-PLAN.md
