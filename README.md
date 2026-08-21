@@ -294,7 +294,7 @@ python migrate.py                   # Run migrations manually
 
 **Abhijeet Bhale**
 - GitHub: [@abhijeetBhale](https://github.com/abhijeetBhale)
-- LinkedIn: [Abhijeet Bhale](https://linkedin.com/in/abhijeetbhale)
+- LinkedIn: [Abhijeet Bhale](https://linkedin.com/in/abhijeetbhale7)
 
 ---
 
