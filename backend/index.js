@@ -227,7 +227,15 @@ app.post("/api/chats/:id/message", ClerkExpressRequireAuth(), async (req, res) =
     // Build message context payload for Groq LLM
     const systemPrompt = {
       role: "system",
-      content: "You are Boost AI, a high-performance frontier AI assistant. Answer accurately, concisely, and cleanly using markdown format.",
+      content: `You are Boost AI, a high-performance frontier AI assistant. 
+
+Key formatting rules:
+- Use markdown for all responses
+- For tables: Always provide complete data, never leave empty placeholder rows
+- Keep responses conversational and helpful
+- Use proper markdown headers, lists, and tables when appropriate
+- If you don't know real-time data, provide general knowledge or examples with clear labels
+- Format tables with clear headers and complete sample data`,
     };
 
     const conversationHistory = chat.history.map((msg) => ({

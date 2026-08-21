@@ -3,6 +3,7 @@ import "./newPrompt.css";
 import Upload from "../upload/upload";
 import { IKImage } from "imagekitio-react";
 import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth, useUser } from "@clerk/clerk-react";
 
@@ -179,11 +180,11 @@ const NewPrompt = ({ data, onFormReady }) => {
             </div>
             {message.role === "user" ? (
               <div className="message">
-                <Markdown>{message.parts[0].text}</Markdown>
+                <Markdown remarkPlugins={[remarkGfm]}>{message.parts[0].text}</Markdown>
               </div>
             ) : (
               <div className="message">
-                <Markdown>{message.parts[0].text}</Markdown>
+                <Markdown remarkPlugins={[remarkGfm]}>{message.parts[0].text}</Markdown>
               </div>
             )}
           </div>
@@ -237,7 +238,7 @@ const NewPrompt = ({ data, onFormReady }) => {
             <img src="/logo.png" alt="Boost AI" />
           </div>
           <div className="message">
-            <Markdown>{answer}</Markdown>
+            <Markdown remarkPlugins={[remarkGfm]}>{answer}</Markdown>
           </div>
         </div>
       )}
