@@ -81,9 +81,6 @@ const findChatSafely = async (id, userId) => {
       return null;
     }
     let chat = await Chat.findOne({ _id: id, userId });
-    if (!chat) {
-      chat = await Chat.findOne({ _id: id });
-    }
     return chat;
   } catch (err) {
     console.error("findChatSafely error:", err);

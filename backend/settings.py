@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str
     CLERK_SECRET_KEY: str
     CLERK_PUBLISHABLE_KEY: str = ""
+    # Optional explicit override, e.g. https://powerful-stud-79.clerk.accounts.dev
+    CLERK_ISSUER_URL: str = ""
     IMAGEKIT_URL_PUBLIC_KEY: str
     IMAGEKIT_URL_PRIVATE_KEY: str
     IMAGEKIT_URL_ENDPOINT: str
