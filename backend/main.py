@@ -10,6 +10,7 @@ from routes import api_router
 from settings import settings
 from services.cache import cache
 from services.rate_limit import limiter
+from services.plans import current_plan, plan_from_token
 from services.auth import _decode_token
 
 
@@ -32,12 +33,28 @@ async def lifespan(app: FastAPI):
             "ALTER TABLE chats ADD COLUMN IF NOT EXISTS feedback JSONB NOT NULL DEFAULT '{}'",
             "ALTER TABLE chats ADD COLUMN IF NOT EXISTS edit_history JSONB NOT NULL DEFAULT '[]'",
             "ALTER TABLE user_chats ADD COLUMN IF NOT EXISTS is_shared BOOLEAN NOT NULL DEFAULT FALSE",
+            "ALTER TABLE feature_flags ALTER COLUMN updated_at SET DEFAULT now()",
         ]
         for migration in migrations:
             try:
                 await conn.execute(text(migration))
             except Exception:
                 pass  # Column already exists
+
+        # Seed default feature flags (idempotent). New flags start OFF;
+        # toggle them on from the Feature Flags page (/admin).
+        seed_flags = [
+            ("enable_chat_sharing", "Allow users to share chats via public link", False),
+            ("show_pricing_page", "Show the Pricing page and its navbar tab", False),
+        ]
+        for name, description, enabled in seed_flags:
+            await conn.execute(
+                text(
+                    "INSERT INTO feature_flags (name, description, enabled, updated_at) "
+                    "VALUES (:n, :d, :e, now()) ON CONFLICT (name) DO NOTHING"
+                ),
+                {"n": name, "d": description, "e": enabled},
+            )
 
     print("Database tables created and migrated")
     yield
@@ -86,6 +103,8 @@ async def extract_user_id_middleware(request: Request, call_next):
         try:
             payload = _decode_token(token)
             request.state.user_id = payload.get("sub")
+            request.state.plan = plan_from_token(payload)
+            current_plan.set(request.state.plan)
         except Exception:
             pass  # invalid token — rate limiter will fall back to IP
     response = await call_next(request)

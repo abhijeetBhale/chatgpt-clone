@@ -8,13 +8,14 @@ from schemas import UserChatEntry
 from services.auth import get_current_user_id
 from services.cache import cache
 from services.rate_limit import limiter
+from services.plans import ai_limit, read_limit, mutate_limit
 from settings import settings
 
 router = APIRouter(prefix="/api/userchats", tags=["userchats"])
 
 
 @router.get("")
-@limiter.limit(settings.RATE_LIMIT_READ)
+@limiter.limit(read_limit)
 async def get_user_chats(
     request: Request,
     user_id: str = Depends(get_current_user_id),

@@ -30,7 +30,11 @@ class CacheService:
             self._connected = True
             print("Redis cache connected")
         except Exception as e:
-            print(f"Redis connection failed, using in-memory cache: {e}")
+            print(
+                f"Redis connection failed, using in-memory cache: {e}\n"
+                "WARNING: cache and rate limits will be per-process (reset on restart).\n"
+                f"Check the credentials for {settings.REDIS_URL.split('@')[-1]} at your Redis provider."
+            )
             self._connected = False
     
     async def disconnect(self):

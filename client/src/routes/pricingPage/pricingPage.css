@@ -1,0 +1,84 @@
+.pricingPage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3xl);
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: var(--spacing-4xl) var(--spacing-lg);
+}
+
+.pricingHeader {
+  text-align: center;
+}
+
+.pricingHeader h1 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 5vw, 42px);
+  font-weight: 700;
+  color: var(--color-ink);
+  margin: 0 0 var(--spacing-sm);
+}
+
+.pricingHeader p {
+  color: var(--color-muted);
+  font-size: 16px;
+  margin: 0;
+}
+
+.pricingTableWrap {
+  border: 1px solid var(--color-hairline);
+  border-radius: 20px;
+  background: var(--color-canvas-card);
+  padding: var(--spacing-xl);
+}
+
+.limitsCard {
+  border: 1px solid var(--color-hairline);
+  border-radius: 20px;
+  background: var(--color-canvas-card);
+  padding: var(--spacing-2xl);
+  overflow-x: auto;
+}
+
+.limitsCard h2 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-ink);
+  margin: 0 0 var(--spacing-lg);
+}
+
+.limitsCard table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.limitsCard th,
+.limitsCard td {
+  text-align: left;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.limitsCard th {
+  color: var(--color-muted);
+  font-weight: 500;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.limitsCard td {
+  color: var(--color-body);
+}
+
+.limitsCard tr:last-child td {
+  border-bottom: none;
+}
+
+.limitsCard .proValue {
+  color: var(--color-accent-sunset);
+  font-weight: 600;
+}

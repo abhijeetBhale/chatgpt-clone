@@ -1,0 +1,288 @@
+.adminPage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--spacing-4xl) var(--spacing-lg);
+}
+
+.adminHeader h1 {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 4vw, 34px);
+  font-weight: 700;
+  color: var(--color-ink);
+  margin: 0 0 var(--spacing-xs);
+}
+
+.adminHeader p {
+  color: var(--color-muted);
+  font-size: 14px;
+  margin: 0;
+}
+
+.adminLoading {
+  color: var(--color-muted);
+}
+
+.adminDenied {
+  border: 1px solid var(--color-hairline);
+  background: var(--color-canvas-card);
+  border-radius: 16px;
+  padding: var(--spacing-2xl);
+  text-align: center;
+}
+
+.adminDenied h2 {
+  color: var(--color-accent-sunset);
+  margin: 0 0 var(--spacing-xs);
+  font-size: 18px;
+}
+
+.adminDenied p {
+  color: var(--color-muted);
+  margin: 0 0 var(--spacing-lg);
+}
+
+.backLink {
+  color: var(--color-body);
+  font-size: 14px;
+}
+
+.flagList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.flagRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-canvas-card);
+  border: 1px solid var(--color-hairline);
+  border-radius: 12px;
+}
+
+.flagRow.on {
+  border-color: rgba(52, 168, 83, 0.5);
+}
+
+.flagInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.flagName {
+  font-family: var(--font-code);
+  font-size: 13px;
+  color: var(--color-ink);
+}
+
+.flagDesc {
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.toggleSwitch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid var(--color-hairline-translucent);
+  background: var(--color-canvas-mid);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.toggleSwitch .knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform var(--transition-fast);
+}
+
+.toggleSwitch.checked {
+  background: #34a853;
+  border-color: #34a853;
+}
+
+.toggleSwitch.checked .knob {
+  transform: translateX(20px);
+}
+
+.deleteBtn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.deleteBtn:hover {
+  color: #ea4335;
+  background: rgba(234, 67, 53, 0.1);
+}
+
+.flagEmpty {
+  color: var(--color-muted);
+  text-align: center;
+  padding: var(--spacing-xl);
+}
+
+.flagError {
+  color: #ea4335;
+  font-size: 13px;
+  margin: 0;
+}
+
+.flagCreate {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.flagCreate input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-hairline);
+  background: var(--color-canvas-card);
+  color: var(--color-body);
+  font-family: var(--font-code);
+  font-size: 13px;
+  outline: none;
+}
+
+.flagCreate input:focus {
+  border-color: var(--color-hairline-translucent);
+}
+
+.flagCreate input:first-child {
+  max-width: 220px;
+}
+
+.flagCreate button {
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: none;
+  background: var(--color-accent-sunset);
+  color: #0a0a0a;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.flagCreate button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.plansCard {
+  border: 1px solid var(--color-hairline);
+  border-radius: 16px;
+  background: var(--color-canvas-card);
+  padding: var(--spacing-xl);
+  overflow-x: auto;
+}
+
+.plansCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  flex-wrap: wrap;
+}
+
+.plansCard h2 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-ink);
+  margin: 0;
+}
+
+.plansStateBadge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+}
+
+.plansStateBadge.on {
+  background: rgba(52, 168, 83, 0.15);
+  color: #34a853;
+}
+
+.plansStateBadge.off {
+  background: rgba(234, 67, 53, 0.12);
+  color: #ea4335;
+}
+
+.plansCard table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.plansCard th,
+.plansCard td {
+  text-align: left;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.plansCard th {
+  color: var(--color-muted);
+  font-weight: 500;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.plansCard td {
+  color: var(--color-body);
+}
+
+.plansCard tr:last-child td {
+  border-bottom: none;
+}
+
+.plansCard .proValue {
+  color: var(--color-accent-sunset);
+  font-weight: 600;
+}
+
+.plansNote {
+  margin: var(--spacing-lg) 0 0;
+  font-size: 12px;
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+
+.plansNote code {
+  font-family: var(--font-code);
+  background: var(--color-canvas-soft);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+}
+
+.plansNote a {
+  color: var(--color-accent-twilight);
+}
+

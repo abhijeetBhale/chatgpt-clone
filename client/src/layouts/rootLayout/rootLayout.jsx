@@ -1,7 +1,8 @@
 import { Link, Outlet } from 'react-router-dom';
 import './rootLayout.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ClerkProvider, SignedIn, SignedOut, UserButton, SignInButton } from '@clerk/clerk-react';
+import { ClerkProvider, SignedIn, SignedOut, UserButton, SignInButton, useAuth } from '@clerk/clerk-react';
+import { useIsAdmin, useFeatureFlag } from '../../hooks/useFeatureFlags';
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -9,7 +10,50 @@ if (!PUBLISHABLE_KEY) {
   throw new Error('Missing Publishable Key');
 }
 
+// Pricing tab — hidden platform-wide while the show_pricing_page flag is off.
+const PricingNavTab = () => {
+  const { enabled, isLoading } = useFeatureFlag('show_pricing_page');
+  if (isLoading || !enabled) return null;
+  return <Link to="/pricing" className="pricingLink">Pricing</Link>;
+};
+
 const queryClient = new QueryClient();
+
+// Lives inside <ClerkProvider> so it can read billing entitlements.
+const HeaderUser = () => {
+  const { has } = useAuth();
+  const isPro = has?.({ plan: 'pro' });
+  const { data: adminSession } = useIsAdmin();
+
+  return (
+    <>
+      <SignedIn>
+        {adminSession?.is_admin && (
+          <Link to="/admin" className="adminNavTab">Feature Flags</Link>
+        )}
+      </SignedIn>
+      {isPro && (
+        <Link to="/pricing" className="proBadge">PRO ✦</Link>
+      )}
+      <div className={`avatarRing ${isPro ? 'pro' : ''}`}>
+        <UserButton
+          appearance={{
+            elements: {
+              userButtonAvatarBox: {
+                width: '34px',
+                height: '34px',
+                borderRadius: '50%',
+                border: isPro
+                  ? '2px solid #0a0a0a'
+                  : '1px solid var(--color-hairline-translucent)'
+              }
+            }
+          }}
+        />
+      </div>
+    </>
+  );
+};
 
 const RootLayout = () => {
   return (
@@ -29,19 +73,9 @@ const RootLayout = () => {
             </div>
 
             <div className="userCluster">
+              <PricingNavTab />
               <SignedIn>
-                <UserButton 
-                  appearance={{
-                    elements: {
-                      userButtonAvatarBox: {
-                        width: '34px',
-                        height: '34px',
-                        borderRadius: '50%',
-                        border: '1px solid var(--color-hairline-translucent)'
-                      }
-                    }
-                  }} 
-                />
+                <HeaderUser />
               </SignedIn>
               <SignedOut>
                 <SignInButton mode="modal">

@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import String, Text, DateTime, Boolean, ForeignKey, Index
+from sqlalchemy import String, Text, DateTime, Boolean, ForeignKey, Index, func
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base
@@ -40,4 +40,18 @@ class UserChat(Base):
 
     __table_args__ = (
         Index("idx_user_chats_user_id", "user_id"),
+    )
+
+
+class FeatureFlag(Base):
+    __tablename__ = "feature_flags"
+
+    name: Mapped[str] = mapped_column(String(64), primary_key=True)
+    description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )

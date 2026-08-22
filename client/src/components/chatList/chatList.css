@@ -212,6 +212,7 @@
   border: 1px solid var(--color-hairline);
   border-radius: var(--radius-sm);
   color: var(--color-ink);
+  text-decoration: none;
   cursor: pointer;
   transition: all var(--transition-fast);
 }

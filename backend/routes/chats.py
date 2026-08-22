@@ -18,6 +18,8 @@ from services.groq_title import generate_chat_title
 from services.groq_chat import stream_chat_response
 from services.cache import cache
 from services.rate_limit import limiter
+from services.plans import ai_limit, read_limit, mutate_limit
+from services import flags
 from settings import settings
 
 log = logging.getLogger("chats")
@@ -26,7 +28,7 @@ router = APIRouter(prefix="/api/chats", tags=["chats"])
 
 
 @router.post("", status_code=201)
-@limiter.limit(settings.RATE_LIMIT_AI)
+@limiter.limit(ai_limit)
 async def create_chat(
     request: Request,
     body: CreateChatRequest,
@@ -56,7 +58,7 @@ async def create_chat(
 
 
 @router.get("/{chat_id}")
-@limiter.limit(settings.RATE_LIMIT_READ)
+@limiter.limit(read_limit)
 async def get_chat(
     request: Request,
     chat_id: uuid.UUID,
@@ -92,7 +94,7 @@ async def get_chat(
 
 
 @router.get("/shared/{chat_id}")
-@limiter.limit(settings.RATE_LIMIT_READ)
+@limiter.limit(read_limit)
 async def get_shared_chat(
     request: Request,
     chat_id: uuid.UUID,
@@ -102,6 +104,10 @@ async def get_shared_chat(
     cached = await cache.get("shared_chat", str(chat_id))
     if cached:
         return cached
+
+    # Feature flag gate — sharing disabled hides all public chat links
+    if not await flags.is_enabled(db, "enable_chat_sharing"):
+        raise HTTPException(status_code=404, detail="Shared chat not found or not shared")
 
     result = await db.execute(
         select(Chat).where(Chat.id == chat_id, Chat.is_shared == True)
@@ -127,7 +133,7 @@ async def get_shared_chat(
 
 
 @router.put("/{chat_id}")
-@limiter.limit(settings.RATE_LIMIT_MUTATE)
+@limiter.limit(mutate_limit)
 async def update_chat(
     request: Request,
     chat_id: uuid.UUID,
@@ -176,7 +182,7 @@ async def update_chat(
 
 
 @router.post("/{chat_id}/message")
-@limiter.limit(settings.RATE_LIMIT_AI)
+@limiter.limit(ai_limit)
 async def send_message(
     request: Request,
     chat_id: uuid.UUID,
@@ -252,7 +258,7 @@ async def send_message(
 
 
 @router.put("/{chat_id}/feedback")
-@limiter.limit(settings.RATE_LIMIT_MUTATE)
+@limiter.limit(mutate_limit)
 async def update_feedback(
     request: Request,
     chat_id: uuid.UUID,
@@ -289,7 +295,7 @@ async def update_feedback(
 
 
 @router.put("/{chat_id}/share")
-@limiter.limit(settings.RATE_LIMIT_MUTATE)
+@limiter.limit(mutate_limit)
 async def update_share_status(
     request: Request,
     chat_id: uuid.UUID,
@@ -297,6 +303,10 @@ async def update_share_status(
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
+    # Feature flag gate — admins can turn sharing off globally from /admin
+    if not await flags.is_enabled(db, "enable_chat_sharing"):
+        raise HTTPException(status_code=403, detail="Chat sharing is currently disabled")
+
     result = await db.execute(
         select(Chat).where(Chat.id == chat_id, Chat.user_id == user_id)
     )
@@ -327,7 +337,7 @@ async def update_share_status(
 
 
 @router.put("/{chat_id}/edit")
-@limiter.limit(settings.RATE_LIMIT_MUTATE)
+@limiter.limit(mutate_limit)
 async def edit_message(
     request: Request,
     chat_id: uuid.UUID,

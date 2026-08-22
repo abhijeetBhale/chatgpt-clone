@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import "./chatList.css";
 import { useQuery } from "@tanstack/react-query";
@@ -58,9 +57,9 @@ const ChatBubbleIcon = ({ className = "svgChatIcon" }) => (
 );
 
 const ChatList = () => {
-  const { getToken } = useAuth();
+  const { getToken, has } = useAuth();
   const location = useLocation();
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const isPro = has?.({ plan: "pro" });
 
   const { isPending, error, data } = useQuery({
     queryKey: ["userChats"],
@@ -139,57 +138,16 @@ const ChatList = () => {
 
       <hr className="dividerHairline" />
 
-      <div className="upgradeCard" onClick={() => setShowUpgradeModal(true)}>
-        <div className="upgradeIcon">
-          <img src="/logo.png" alt="Pro" />
-        </div>
-        <div className="upgradeTexts">
-          <span className="title">Upgrade to Pro <span className="sparkle">✦</span></span>
-          <span className="sub">Unlimited access & Grok reasoning</span>
-        </div>
-      </div>
-
-      {showUpgradeModal && (
-        <div className="upgradeModalOverlay" onClick={() => setShowUpgradeModal(false)}>
-          <div className="upgradeModal" onClick={(e) => e.stopPropagation()}>
-            <button className="upgradeModalClose" onClick={() => setShowUpgradeModal(false)}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 6 6 18M6 6l12 12" />
-              </svg>
-            </button>
-            <div className="upgradeModalHeader">
-              <img src="/logo.png" alt="Pro" className="upgradeModalLogo" />
-              <h2 className="upgradeModalTitle">Upgrade to Pro <span className="sparkle">✦</span></h2>
-              <p className="upgradeModalSub">Unlock the full power of Boost AI</p>
-            </div>
-            <div className="upgradeModalPlans">
-              <div className="planCard">
-                <span className="planBadge">Popular</span>
-                <span className="planName">Monthly</span>
-                <span className="planPrice">$19<span className="planPeriod">/mo</span></span>
-                <ul className="planFeatures">
-                  <li>Unlimited conversations</li>
-                  <li>Grok reasoning engine</li>
-                  <li>Priority support</li>
-                  <li>Custom instructions</li>
-                </ul>
-                <button className="planButton primary">Get Started</button>
-              </div>
-              <div className="planCard">
-                <span className="planBadge save">Save 20%</span>
-                <span className="planName">Annual</span>
-                <span className="planPrice">$15<span className="planPeriod">/mo</span></span>
-                <ul className="planFeatures">
-                  <li>Everything in Monthly</li>
-                  <li>Early access to features</li>
-                  <li>Advanced analytics</li>
-                  <li>API access</li>
-                </ul>
-                <button className="planButton">Get Started</button>
-              </div>
-            </div>
+      {!isPro && (
+        <Link to="/pricing" className="upgradeCard">
+          <div className="upgradeIcon">
+            <img src="/logo.png" alt="Pro" />
           </div>
-        </div>
+          <div className="upgradeTexts">
+            <span className="title">Upgrade to Pro <span className="sparkle">✦</span></span>
+            <span className="sub">Unlock 4x higher rate limits</span>
+          </div>
+        </Link>
       )}
     </div>
   );

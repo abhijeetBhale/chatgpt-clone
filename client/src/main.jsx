@@ -12,6 +12,8 @@ import RootLayout from './layouts/rootLayout/rootLayout'
 import DashboardLayout from './layouts/dashboardLayouts/dashboardLayout'
 import SignInPage from './routes/signInPage/signInPage'
 import SignUpPage from './routes/signUpPage/signUpPage'
+import PricingPage from './routes/pricingPage/pricingPage'
+import AdminPage from './routes/adminPage/adminPage'
 
 
 const router = createBrowserRouter([
@@ -21,6 +23,8 @@ const router = createBrowserRouter([
       { path: '/', element: <Homepage /> },
       { path: '/sign-in/*', element: <SignInPage /> },
       { path: '/sign-up/*', element: <SignUpPage /> },
+      { path: '/pricing', element: <PricingPage /> },
+      { path: '/admin', element: <AdminPage /> },
       { path: '/shared/:id', element: <SharedChatPage /> },
       {
         element: <DashboardLayout />,

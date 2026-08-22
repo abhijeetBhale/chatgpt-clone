@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import "./newPrompt.css";
 import Upload from "../upload/upload";
 import { IKImage } from "imagekitio-react";
@@ -6,6 +7,7 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth, useUser } from "@clerk/clerk-react";
+import { useFeatureFlag } from "../../hooks/useFeatureFlags";
 
 // SVG Icons
 const CopyIcon = () => (
@@ -73,6 +75,12 @@ const NewPrompt = ({ data, onFormReady }) => {
   // Feedback state - initialize from backend data
   const [feedback, setFeedback] = useState(data?.feedback || {});
 
+  // Rate-limit state — shows an upgrade prompt when the free plan quota is hit
+  const [isRateLimited, setIsRateLimited] = useState(false);
+
+  // Feature flag: sharing UI hides platform-wide while the flag is off
+  const { enabled: sharingEnabled } = useFeatureFlag("enable_chat_sharing");
+
   const endRef = useRef(null);
   const formRef = useRef(null);
 
@@ -97,6 +105,7 @@ const NewPrompt = ({ data, onFormReady }) => {
     if (!isInitial) setQuestion(text);
     setIsThinking(true);
     setAnswer("");
+    setIsRateLimited(false);
 
     // Clear form input
     if (formRef.current) {
@@ -119,6 +128,11 @@ const NewPrompt = ({ data, onFormReady }) => {
       });
 
       if (!response.ok) {
+        if (response.status === 429) {
+          const limitError = new Error("RATE_LIMITED");
+          limitError.isRateLimit = true;
+          throw limitError;
+        }
         throw new Error("Failed to stream AI response from backend");
       }
 
@@ -177,6 +191,10 @@ const NewPrompt = ({ data, onFormReady }) => {
       console.error("Backend streaming error:", err);
       setIsThinking(false);
       hasRun.current = false;
+      if (err.isRateLimit) {
+        setQuestion("");
+        setIsRateLimited(true);
+      }
     }
   };
 
@@ -422,9 +440,11 @@ const NewPrompt = ({ data, onFormReady }) => {
                   >
                     <DislikeIcon filled={feedback[i] === 'dislike'} />
                   </button>
-                  <button className="action-btn" onClick={handleShare} title="Share">
-                    <ShareIcon />
-                  </button>
+                  {sharingEnabled && (
+                    <button className="action-btn" onClick={handleShare} title="Share">
+                      <ShareIcon />
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -460,6 +480,21 @@ const NewPrompt = ({ data, onFormReady }) => {
         </div>
       )}
 
+      {isRateLimited && (
+        <div className="message-wrapper ai">
+          <div className="message-avatar">
+            <img src="/logo.png" alt="Boost AI" />
+          </div>
+          <div className="message-content-wrapper">
+            <div className="rateLimitBanner">
+              <strong>You&apos;ve hit your free plan limit.</strong>
+              <span>Upgrade to Pro for up to 40 AI messages per minute.</span>
+              <Link to="/pricing" className="upgradeBtn">Upgrade to Pro</Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       {answer && (
         <div className="message-wrapper ai">
           <div className="message-avatar">
@@ -484,9 +519,11 @@ const NewPrompt = ({ data, onFormReady }) => {
               >
                 <DislikeIcon filled={feedback['streaming'] === 'dislike'} />
               </button>
-              <button className="action-btn" onClick={handleShare} title="Share">
-                <ShareIcon />
-              </button>
+              {sharingEnabled && (
+                <button className="action-btn" onClick={handleShare} title="Share">
+                  <ShareIcon />
+                </button>
+              )}
             </div>
           </div>
         </div>
