@@ -12,6 +12,56 @@
   margin: 0 auto;
 }
 
+/* Image preview above input */
+.chatInputPreview {
+  padding: 8px 12px 0;
+}
+
+.chatInputPreviewImage {
+  position: relative;
+  display: inline-block;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--color-hairline);
+  background-color: var(--color-canvas-card);
+}
+
+.chatInputPreviewImage img {
+  display: block;
+  max-height: 120px;
+  border-radius: var(--radius-sm);
+}
+
+.chatInputPreviewRemove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease;
+}
+
+.chatInputPreviewRemove:hover {
+  background-color: rgba(220, 38, 38, 0.8);
+}
+
+.chatInputPreviewLoading {
+  font-size: 13px;
+  color: var(--color-muted);
+  font-style: italic;
+  padding: 4px 0;
+}
+
 .chatInputInner form {
   width: 100%;
   display: flex;

@@ -42,6 +42,8 @@
 - ⚡ **Redis Caching** — Chat data cached with 5-minute TTL (Upstash)
 - 🔄 **Smart Invalidation** — Cache auto-refreshes on data changes
 - 📦 **In-Memory Fallback** — Works without Redis (per-instance cache)
+- 🛡️ **Rate Limiting** — Per-user throttling via slowapi + Redis (10 AI req/min, 60 read/min)
+- 🔀 **Multi-Provider Failover** — Groq → Cerebras → OpenRouter (automatic failover on 429)
 
 ---
 
@@ -66,8 +68,11 @@
 | **FastAPI** | Async web framework |
 | **SQLAlchemy** | ORM with async PostgreSQL |
 | **psycopg** | PostgreSQL async driver |
-| **Groq** | LLM inference API (GPT-OSS-120B) |
-| **Redis** | Caching layer (Upstash) |
+| **Groq** | Primary LLM inference (GPT-OSS-120B, 320 tok/s) |
+| **Cerebras** | Failover LLM (1M tokens/day free, 1800 tok/s) |
+| **OpenRouter** | Failover LLM (DeepSeek V4-Flash, Qwen3.8 free) |
+| **slowapi** | Rate limiting middleware (Redis-backed) |
+| **Redis** | Caching layer + rate limit counters (Upstash) |
 | **Pydantic** | Data validation & settings |
 | **PyJWT** | JWT token decoding |
 
@@ -100,8 +105,10 @@ chatgpt-clone/
 │   │   └── upload.py              # ImageKit upload auth
 │   └── services/
 │       ├── auth.py                # JWT authentication
-│       ├── groq_chat.py           # AI streaming service
+│       ├── llm_router.py          # Multi-provider LLM failover
+│       ├── groq_chat.py           # AI streaming (delegates to llm_router)
 │       ├── groq_title.py          # Auto title generation
+│       ├── rate_limit.py          # slowapi rate limiter config
 │       ├── cache.py               # Redis + in-memory cache
 │       └── imagekit.py            # ImageKit params
 │
@@ -246,6 +253,51 @@ Visit [http://localhost:5173](http://localhost:5173)
 | `boostai:shared_chat:{chatId}` | 10 min | Shared chat data |
 
 **Cache is invalidated** on: chat creation, message send, feedback update, share toggle, message edit.
+
+---
+
+## 🛡️ Rate Limiting
+
+All endpoints are rate-limited per user (Clerk JWT) or per IP (unauthenticated).
+
+| Tier | Endpoints | Limit | Purpose |
+|------|-----------|-------|---------|
+| **AI** | `POST /message`, `POST /chats` | 10/min | Protect LLM API quota |
+| **Read** | `GET /chats/*`, `GET /userchats` | 60/min | Sidebar & history loads |
+| **Mutate** | `PUT /feedback`, `/share`, `/edit` | 30/min | Low-cost mutations |
+| **Global** | All endpoints | 100/min | DDoS protection |
+
+Rate limit headers are returned automatically:
+- `X-RateLimit-Limit` — max requests allowed
+- `X-RateLimit-Remaining` — requests left in window
+- `Retry-After` — seconds until next request (on 429)
+
+---
+
+## 🔀 Multi-Provider LLM Failover
+
+The backend automatically tries multiple LLM providers in order:
+
+```
+Request → Groq (GPT-OSS-120B, 320 tok/s)
+         ↓ on 429/connection error
+       → Cerebras (GPT-OSS-120B, 1M tokens/day free)
+         ↓ on 429/connection error
+       → OpenRouter (DeepSeek V4-Flash free, Qwen3.8 free)
+         ↓ on failure
+       → User-friendly error message
+```
+
+### Free Tier Capacity (All Providers Combined)
+
+| Provider | RPM | Daily Tokens | Speed |
+|----------|-----|--------------|-------|
+| **Groq** | 30 | ~500K | 320+ tok/s |
+| **Cerebras** | 5 | ~1M | 1,800+ tok/s |
+| **OpenRouter** | 20 | varies | varies |
+| **Total** | **55** | **~1.5M+** | — |
+
+Set `OPENROUTER_API_KEY` and `CEREBRAS_API_KEY` in `.env` to enable failover.
 
 ---
 

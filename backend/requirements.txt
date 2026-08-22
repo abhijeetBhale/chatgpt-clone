@@ -7,3 +7,5 @@ python-dotenv==1.2.3
 groq==1.6.0
 PyJWT==2.13.0
 redis[hiredis]==5.2.1
+slowapi==0.1.9
+httpx==0.28.1

@@ -3,9 +3,18 @@ import { useRef } from 'react';
 
 const urlEndpoint = import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT;
 const publicKey = import.meta.env.VITE_IMAGEKIT_URL_PUBLIC_KEY;
+
+if (!publicKey || !urlEndpoint) {
+    console.error("[Upload] Missing ImageKit env vars:", {
+        publicKey: publicKey ? "set" : "MISSING",
+        urlEndpoint: urlEndpoint ? "set" : "MISSING",
+    });
+}
+
 const authenticator = async () => {
     try {
-        const response = await fetch('http://localhost:3000/api/upload');
+        const apiUrl = import.meta.env.VITE_API_URL;
+        const response = await fetch(`${apiUrl}/api/upload`);
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -27,16 +36,15 @@ const Upload = ({ setImg }) => {
     const ikUploadRef = useRef(null);
 
     const onError = err => {
-        console.log("Error", err);
+        console.error("Upload error:", err);
     };
 
     const onSuccess = res => {
-        console.log("Success", res);
         setImg((prev) => ({ ...prev, isLoading: false, dbData: res }));
     };
 
     const onUploadProgress = progress => {
-        console.log("Progress", progress);
+        // progress tracking if needed
     };
 
     const onUploadStart = evt => {
@@ -52,7 +60,6 @@ const Upload = ({ setImg }) => {
                     }
                 }
             }));
-            console.log("File content:", e.target.result);
         };
         reader.readAsDataURL(file);
     }
@@ -62,7 +69,7 @@ const Upload = ({ setImg }) => {
             urlEndpoint={urlEndpoint}
             authenticator={authenticator}
         >
-            <IKUpload filename="test-upload.png"
+            <IKUpload
                 onError={onError}
                 onSuccess={onSuccess}
                 useUniqueFileName={true}

@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from datetime import datetime, timezone
 from sqlalchemy import text
 
@@ -8,16 +9,23 @@ from database import engine, Base
 from routes import api_router
 from settings import settings
 from services.cache import cache
+from services.rate_limit import limiter
+from services.auth import _decode_token
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialize cache
     await cache.connect()
-    
+
+    # Attach Redis storage to the rate limiter now that Redis is up
+    if settings.RATE_LIMIT_ENABLED and cache._connected and cache.redis_client:
+        from slowapi.backends import RedisBackend
+        limiter._storage = RedisBackend(cache.redis_client)
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        
+
         # Run migrations for new columns
         migrations = [
             "ALTER TABLE chats ADD COLUMN IF NOT EXISTS is_shared BOOLEAN NOT NULL DEFAULT FALSE",
@@ -30,10 +38,10 @@ async def lifespan(app: FastAPI):
                 await conn.execute(text(migration))
             except Exception:
                 pass  # Column already exists
-        
+
     print("Database tables created and migrated")
     yield
-    
+
     # Cleanup
     await cache.disconnect()
     await engine.dispose()
@@ -42,7 +50,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Boost AI Backend",
     description="AI Chat Backend API",
-    version="2.0.0",
+    version="2.1.0",
     lifespan=lifespan,
     docs_url=None,
     redoc_url=None,
@@ -61,15 +69,52 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Attach slowapi limiter to the app state
+app.state.limiter = limiter
+
+
+# ---------------------------------------------------------------------------
+# Middleware: extract user_id from JWT and store on request.state
+# This lets the rate-limiter key function use the user ID instead of IP.
+# ---------------------------------------------------------------------------
+@app.middleware("http")
+async def extract_user_id_middleware(request: Request, call_next):
+    request.state.user_id = None
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header.removeprefix("Bearer ").strip()
+        try:
+            payload = _decode_token(token)
+            request.state.user_id = payload.get("sub")
+        except Exception:
+            pass  # invalid token — rate limiter will fall back to IP
+    response = await call_next(request)
+    return response
+
+
+# ---------------------------------------------------------------------------
+# Rate-limit exceeded handler (returns JSON instead of plain text)
+# ---------------------------------------------------------------------------
+@app.exception_handler(429)
+async def rate_limit_handler(request: Request, exc):
+    return JSONResponse(
+        status_code=429,
+        content={
+            "error": "Rate limit exceeded",
+            "detail": str(exc.detail),
+            "retry_after": getattr(exc, "retry_after", None),
+        },
+    )
+
 
 def _verify_docs_auth(request: Request):
-    from services.auth import _decode_token
+    from services.auth import _decode_token as _dt
     auth_header = request.headers.get("Authorization", "")
     if not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing Authorization header")
     token = auth_header.removeprefix("Bearer ").strip()
     try:
-        _decode_token(token)
+        _dt(token)
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid token")
 
@@ -103,5 +148,5 @@ async def health_check():
         "message": "AI Chat Backend is running!",
         "status": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "version": "2.0.0 (Python/FastAPI)",
+        "version": "2.1.0 (Python/FastAPI)",
     }

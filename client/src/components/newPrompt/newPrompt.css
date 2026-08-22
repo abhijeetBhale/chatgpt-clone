@@ -7,6 +7,18 @@
   text-align: center;
 }
 
+/* Message Attachment (image in user bubble) */
+.message-attachment {
+  margin-bottom: 8px;
+}
+
+.message-attachment img {
+  border-radius: var(--radius-sm);
+  max-width: 300px;
+  max-height: 300px;
+  display: block;
+}
+
 /* Message Content Wrapper */
 .message-content-wrapper {
   position: relative;

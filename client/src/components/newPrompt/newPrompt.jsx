@@ -67,6 +67,9 @@ const NewPrompt = ({ data, onFormReady }) => {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editingText, setEditingText] = useState("");
   
+  // Pending send — stores text when user presses Enter while image is uploading
+  const pendingText = useRef(null);
+  
   // Feedback state - initialize from backend data
   const [feedback, setFeedback] = useState(data?.feedback || {});
 
@@ -94,6 +97,11 @@ const NewPrompt = ({ data, onFormReady }) => {
     if (!isInitial) setQuestion(text);
     setIsThinking(true);
     setAnswer("");
+
+    // Clear form input
+    if (formRef.current) {
+      formRef.current.reset();
+    }
 
     try {
       const token = await getToken();
@@ -178,6 +186,12 @@ const NewPrompt = ({ data, onFormReady }) => {
     const text = e.target.text.value;
     if (!text) return;
 
+    // If image is still uploading, wait for it
+    if (img.isLoading) {
+      pendingText.current = text;
+      return;
+    }
+
     add(text, false);
   };
 
@@ -201,6 +215,15 @@ const NewPrompt = ({ data, onFormReady }) => {
       onFormReady({ handleSubmit, formRef, isThinking, img, setImg, userAvatar });
     }
   }, [isThinking, img, userAvatar]);
+
+  // Auto-send when image finishes uploading (if user pressed Enter during upload)
+  useEffect(() => {
+    if (pendingText.current && img.dbData?.filePath && !img.isLoading) {
+      const text = pendingText.current;
+      pendingText.current = null;
+      add(text, false);
+    }
+  }, [img.dbData, img.isLoading]);
 
   // Copy to clipboard
   const handleCopy = (text) => {
@@ -318,24 +341,6 @@ const NewPrompt = ({ data, onFormReady }) => {
     <>
       {data?.history?.map((message, i) => (
         <React.Fragment key={i}>
-          {message.img && (
-            <div className="message-wrapper user">
-              <div className="message-avatar">
-                <img src={userAvatar || "/human1.jpeg"} alt="You" />
-              </div>
-              <div className="messageImageContainer">
-                <IKImage
-                  urlEndpoint={import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT}
-                  path={message.img}
-                  height="300"
-                  width="400"
-                  transformation={[{ height: 300, width: 400 }]}
-                  loading="lazy"
-                  lqip={{ active: true, quality: 20 }}
-                />
-              </div>
-            </div>
-          )}
           <div
             className={
               message.role === "user"
@@ -370,6 +375,19 @@ const NewPrompt = ({ data, onFormReady }) => {
                   </div>
                 ) : (
                   <>
+                    {message.img && (
+                      <div className="message-attachment">
+                        <IKImage
+                          urlEndpoint={import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT}
+                          publicKey={import.meta.env.VITE_IMAGEKIT_URL_PUBLIC_KEY}
+                          path={message.img}
+                          width="300"
+                          transformation={[{ width: 300 }]}
+                          loading="lazy"
+                          lqip={{ active: true, quality: 20 }}
+                        />
+                      </div>
+                    )}
                     <div className="message">
                       <Markdown remarkPlugins={[remarkGfm]}>{message.parts[0].text}</Markdown>
                     </div>
@@ -414,22 +432,7 @@ const NewPrompt = ({ data, onFormReady }) => {
         </React.Fragment>
       ))}
 
-      {img.isLoading && <div className="loadingImage">Uploading asset...</div>}
-      {img.dbData?.filePath && (
-        <div className="message-wrapper user">
-          <div className="message-avatar">
-            <img src={userAvatar || "/human1.jpeg"} alt="You" />
-          </div>
-          <div className="messageImageContainer">
-            <IKImage
-              urlEndpoint={import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT}
-              path={img.dbData?.filePath}
-              width="380"
-              transformation={[{ width: 380 }]}
-            />
-          </div>
-        </div>
-      )}
+      {img.isLoading && <div className="loadingImage">Uploading image...</div>}
 
       {question && (
         <div className="message-wrapper user">

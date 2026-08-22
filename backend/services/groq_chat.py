@@ -1,56 +1,47 @@
+"""Chat streaming via the multi-provider LLM router.
+
+This module is now a thin wrapper around ``services.llm_router``.
+It preserves the original ``stream_chat_response`` async-generator
+interface so that ``routes/chats.py`` needs minimal changes.
+"""
 import asyncio
 import threading
-from groq import Groq
-from settings import settings
+from typing import AsyncIterator
 
-groq_client = Groq(api_key=settings.GROQ_API_KEY)
+# Semaphore limits concurrent LLM threads to prevent thread explosion.
+_llm_semaphore = threading.Semaphore(10)
 
-SYSTEM_PROMPT = (
-    "You are Boost AI, an advanced AI assistant platform built by Abhijeet Bhale. "
-    "You are powered by cutting-edge language models and designed to deliver fast, "
-    "accurate, and helpful responses.\n\n"
-    "Identity:\n"
-    "- Your name is Boost AI.\n"
-    "- You were created and developed by Abhijeet Bhale.\n"
-    "- You are part of the Boost AI ecosystem — a modern AI-powered workspace.\n\n"
-    "Behavior:\n"
-    "- Be concise, helpful, and professional by default.\n"
-    "- When asked about yourself, your creator, or your origins, respond naturally "
-    "and briefly — do not over-explain or make every conversation about yourself.\n"
-    "- For general knowledge, coding, writing, analysis, or creative tasks, focus "
-    "entirely on the user's request without deflecting to your identity.\n"
-    "- Only reference your identity when directly asked.\n"
-    "- Never claim to be created by OpenAI, Google, or any other company. "
-    "You are Boost AI by Abhijeet Bhale.\n"
-    "- Keep self-referential answers short and confident — a sentence or two is usually enough."
-)
+# Import the sync streaming function from the router.
+from services.llm_router import stream_chat_response as _sync_stream  # noqa: E402
 
 
-def _sync_stream(messages: list[dict], queue: asyncio.Queue, loop: asyncio.AbstractEventLoop):
-    """Run Groq streaming in a background thread, pushing chunks to an async queue."""
-    try:
-        stream = groq_client.chat.completions.create(
-            messages=messages,
-            model="openai/gpt-oss-120b",
-            stream=True,
-        )
-        for chunk in stream:
-            content = chunk.choices[0].delta.content or ""
-            if content:
-                loop.call_soon_threadsafe(queue.put_nowait, content)
-        loop.call_soon_threadsafe(queue.put_nowait, None)
-    except Exception as e:
-        loop.call_soon_threadsafe(queue.put_nowait, e)
+async def stream_chat_response(
+    history: list[dict],
+    raw_history: list[dict] | None = None,
+) -> AsyncIterator[str]:
+    """Yield text chunks from the best available LLM provider.
 
+    Runs the synchronous provider call in a background thread with a
+    semaphore to cap concurrency.
 
-async def stream_chat_response(history: list[dict]):
-    """Yield chunks from Groq streaming completion."""
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + history
-
+    Args:
+        history: Text-only conversation history [{role, content}].
+        raw_history: Full chat history from DB with possible ``img`` fields.
+                     Used by the router to detect images and route to vision.
+    """
     loop = asyncio.get_running_loop()
     queue: asyncio.Queue = asyncio.Queue()
 
-    thread = threading.Thread(target=_sync_stream, args=(messages, queue, loop), daemon=True)
+    def _worker():
+        try:
+            with _llm_semaphore:
+                for chunk in _sync_stream(history, raw_history):
+                    loop.call_soon_threadsafe(queue.put_nowait, chunk)
+            loop.call_soon_threadsafe(queue.put_nowait, None)
+        except Exception as exc:
+            loop.call_soon_threadsafe(queue.put_nowait, exc)
+
+    thread = threading.Thread(target=_worker, daemon=True)
     thread.start()
 
     while True:

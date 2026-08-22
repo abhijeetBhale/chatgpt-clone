@@ -1,7 +1,8 @@
 import uuid
 import json
+import logging
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,12 +17,18 @@ from services.auth import get_current_user_id
 from services.groq_title import generate_chat_title
 from services.groq_chat import stream_chat_response
 from services.cache import cache
+from services.rate_limit import limiter
+from settings import settings
+
+log = logging.getLogger("chats")
 
 router = APIRouter(prefix="/api/chats", tags=["chats"])
 
 
 @router.post("", status_code=201)
+@limiter.limit(settings.RATE_LIMIT_AI)
 async def create_chat(
+    request: Request,
     body: CreateChatRequest,
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
@@ -49,7 +56,9 @@ async def create_chat(
 
 
 @router.get("/{chat_id}")
+@limiter.limit(settings.RATE_LIMIT_READ)
 async def get_chat(
+    request: Request,
     chat_id: uuid.UUID,
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
@@ -83,7 +92,9 @@ async def get_chat(
 
 
 @router.get("/shared/{chat_id}")
+@limiter.limit(settings.RATE_LIMIT_READ)
 async def get_shared_chat(
+    request: Request,
     chat_id: uuid.UUID,
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
@@ -116,7 +127,9 @@ async def get_shared_chat(
 
 
 @router.put("/{chat_id}")
+@limiter.limit(settings.RATE_LIMIT_MUTATE)
 async def update_chat(
+    request: Request,
     chat_id: uuid.UUID,
     body: UpdateChatRequest,
     user_id: str = Depends(get_current_user_id),
@@ -163,7 +176,9 @@ async def update_chat(
 
 
 @router.post("/{chat_id}/message")
+@limiter.limit(settings.RATE_LIMIT_AI)
 async def send_message(
+    request: Request,
     chat_id: uuid.UUID,
     body: MessageRequest,
     user_id: str = Depends(get_current_user_id),
@@ -189,6 +204,12 @@ async def send_message(
         )
         await db.commit()
         await db.refresh(chat)
+    else:
+        await db.refresh(chat)
+
+    log.info("send_message: chat_id=%s, body.img=%s, chat.history_len=%d", chat_id, body.img, len(chat.history))
+    for i, msg in enumerate(chat.history):
+        log.debug("chat.history[%d]: role=%s, has_img=%s, img=%s", i, msg.get("role"), bool(msg.get("img")), msg.get("img"))
 
     conversation_history = [
         {"role": "assistant" if msg["role"] == "model" else "user", "content": msg["parts"][0].get("text", "")}
@@ -198,7 +219,7 @@ async def send_message(
     async def event_generator():
         accumulated = ""
         try:
-            async for chunk in stream_chat_response(conversation_history):
+            async for chunk in stream_chat_response(conversation_history, chat.history):
                 accumulated += chunk
                 yield f"data: {json.dumps({'content': chunk})}\n\n"
 
@@ -231,7 +252,9 @@ async def send_message(
 
 
 @router.put("/{chat_id}/feedback")
+@limiter.limit(settings.RATE_LIMIT_MUTATE)
 async def update_feedback(
+    request: Request,
     chat_id: uuid.UUID,
     body: FeedbackRequest,
     user_id: str = Depends(get_current_user_id),
@@ -266,7 +289,9 @@ async def update_feedback(
 
 
 @router.put("/{chat_id}/share")
+@limiter.limit(settings.RATE_LIMIT_MUTATE)
 async def update_share_status(
+    request: Request,
     chat_id: uuid.UUID,
     body: ShareRequest,
     user_id: str = Depends(get_current_user_id),
@@ -302,7 +327,9 @@ async def update_share_status(
 
 
 @router.put("/{chat_id}/edit")
+@limiter.limit(settings.RATE_LIMIT_MUTATE)
 async def edit_message(
+    request: Request,
     chat_id: uuid.UUID,
     body: EditMessageRequest,
     user_id: str = Depends(get_current_user_id),
