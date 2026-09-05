@@ -236,16 +236,46 @@ VISION_PROVIDERS = [
     "nvidia/nemotron-nano-12b-v2-vl:free",
 ]
 
+# Groq vision model (primary — you already have GROQ_API_KEY)
+GROQ_VISION_MODEL = "qwen/qwen3.6-27b"
+
+
+def _stream_groq_vision(messages: list[dict]) -> Iterator[str]:
+    """Stream chunks from Groq vision model (qwen/qwen3.6-27b)."""
+    client = _get_groq()
+    stream = client.chat.completions.create(
+        messages=messages,
+        model=GROQ_VISION_MODEL,
+        stream=True,
+    )
+    for chunk in stream:
+        content = chunk.choices[0].delta.content or ""
+        if content:
+            yield content
+
 
 def _stream_cerebras_vision(messages: list[dict]) -> Iterator[str]:
     """Stream chunks from the best available free vision model.
 
-    Tries OpenRouter vision models first (free), then Cerebras as fallback.
+    Tries Groq vision first (you have GROQ_API_KEY), then OpenRouter free
+    models, then Cerebras as fallback.
     Only yields once a provider succeeds completely.
     """
     errors = []
 
-    # Try free OpenRouter vision models
+    # 1. Try Groq vision (primary — you have the API key)
+    if settings.GROQ_API_KEY:
+        try:
+            chunks = list(_stream_groq_vision(messages))
+            log.info("Vision served by Groq model: %s", GROQ_VISION_MODEL)
+            for chunk in chunks:
+                yield chunk
+            return
+        except Exception as exc:
+            errors.append(f"groq/{GROQ_VISION_MODEL}: {exc}")
+            log.warning("Groq vision model %s failed: %s — trying next", GROQ_VISION_MODEL, exc)
+
+    # 2. Try free OpenRouter vision models
     if settings.OPENROUTER_API_KEY:
         for model in VISION_PROVIDERS:
             try:
@@ -258,7 +288,7 @@ def _stream_cerebras_vision(messages: list[dict]) -> Iterator[str]:
                 errors.append(f"{model}: {exc}")
                 log.warning("Vision model %s failed: %s — trying next", model, exc)
 
-    # Fallback: Cerebras vision
+    # 3. Fallback: Cerebras vision
     if settings.CEREBRAS_API_KEY:
         try:
             client = _get_cerebras()
@@ -390,10 +420,10 @@ def stream_chat_response(
                      i, msg.get("role"), bool(msg.get("img")), msg.get("img"))
 
     # If images present, try vision model first
-    if has_images and (settings.OPENROUTER_API_KEY or settings.CEREBRAS_API_KEY):
+    if has_images and (settings.GROQ_API_KEY or settings.OPENROUTER_API_KEY or settings.CEREBRAS_API_KEY):
         try:
             messages = _build_vision_messages(source)
-            log.info("Routing to Cerebras Gemma 4 (vision) — images detected, %d messages", len(messages))
+            log.info("Routing to vision provider — images detected, %d messages", len(messages))
             chunks = list(_stream_cerebras_vision(messages))
             for chunk in chunks:
                 yield chunk

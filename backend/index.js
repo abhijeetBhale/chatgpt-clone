@@ -26,7 +26,14 @@ if (!GROQ_API_KEY) {
 const groq = new Groq({
   apiKey: GROQ_API_KEY || "",
 });
-const MODEL = "openai/gpt-oss-120b";
+const MODEL = "qwen/qwen3.6-27b";
+
+const VISION_MODELS = new Set([
+  "qwen/qwen3.6-27b",
+  "qwen/qwen3.8-27b",
+  "llama-3.2-90b-vision-preview",
+  "llama-3.2-11b-vision-preview",
+]);
 
 const port = process.env.PORT || 3000;
 const app = express();
@@ -68,6 +75,22 @@ const imagekit = new ImageKit({
   privateKey: process.env.IMAGEKIT_URL_PRIVATE_KEY,
   urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT,
 });
+
+// Helper: fetch an image from ImageKit and return base64 data URL
+const fetchImageAsBase64 = async (filePath) => {
+  try {
+    const url = `${process.env.IMAGEKIT_URL_ENDPOINT}${filePath}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Failed to fetch image: ${response.status}`);
+    const buffer = await response.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString("base64");
+    const contentType = response.headers.get("content-type") || "image/jpeg";
+    return `data:${contentType};base64,${base64}`;
+  } catch (err) {
+    console.error("Error fetching image as base64:", err);
+    return null;
+  }
+};
 
 app.get("/api/upload", (req, res) => {
   const result = imagekit.getAuthenticationParameters();
@@ -232,13 +255,36 @@ Key formatting rules:
 - Keep responses conversational and helpful
 - Use proper markdown headers, lists, and tables when appropriate
 - If you don't know real-time data, provide general knowledge or examples with clear labels
-- Format tables with clear headers and complete sample data`,
+- Format tables with clear headers and complete sample data
+- When a user shares an image, describe and analyze it in detail`,
     };
 
-    const conversationHistory = chat.history.map((msg) => ({
-      role: msg.role === "model" ? "assistant" : "user",
-      content: msg.parts[0]?.text || "",
-    }));
+    const supportsVision = VISION_MODELS.has(MODEL);
+
+    // Build conversation history — include images for vision-capable models
+    const conversationHistory = [];
+    for (const msg of chat.history) {
+      const role = msg.role === "model" ? "assistant" : "user";
+      const textContent = msg.parts[0]?.text || "";
+
+      if (msg.img && supportsVision) {
+        const imageDataUrl = await fetchImageAsBase64(msg.img);
+        if (imageDataUrl) {
+          conversationHistory.push({
+            role,
+            content: [
+              { type: "text", text: textContent },
+              { type: "image_url", image_url: { url: imageDataUrl } },
+            ],
+          });
+        } else {
+          // Fallback: send text only if image fetch fails
+          conversationHistory.push({ role, content: textContent });
+        }
+      } else {
+        conversationHistory.push({ role, content: textContent });
+      }
+    }
 
     const messages = [systemPrompt, ...conversationHistory];
 

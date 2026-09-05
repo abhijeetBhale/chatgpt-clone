@@ -136,6 +136,7 @@ const AdminPage = () => {
             />
             <button type="submit" disabled={!newName.trim()}>Add flag</button>
           </form>
+        </>
         )}
 
         {planModel && (
@@ -171,7 +172,6 @@ const AdminPage = () => {
             </p>
           </section>
         )}
-        </>
       )}
     </div>
   );

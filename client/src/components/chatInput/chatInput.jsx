@@ -1,19 +1,33 @@
-import React from "react";
+import React, { useRef, useCallback } from "react";
 import "./chatInput.css";
 import Upload from "../upload/upload";
-import { useUser } from "@clerk/clerk-react";
 import { IKImage } from "imagekitio-react";
 
 const ChatInput = ({ formState }) => {
   const { handleSubmit, formRef, isThinking, img, setImg } = formState || {};
-  const { user } = useUser();
-  const userAvatar = user?.imageUrl;
+  const uploadRef = useRef(null);
+
+  const handleRemoveImage = useCallback(() => {
+    setImg({ isLoading: false, error: "", dbData: {}, aiData: {} });
+  }, [setImg]);
+
+  const handlePaste = useCallback((e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file && uploadRef.current?.uploadFile) {
+          uploadRef.current.uploadFile(file);
+        }
+        return;
+      }
+    }
+  }, []);
 
   if (!handleSubmit) return null;
-
-  const handleRemoveImage = () => {
-    setImg({ isLoading: false, error: "", dbData: {}, aiData: {} });
-  };
 
   return (
     <div className="chatInput">
@@ -45,9 +59,15 @@ const ChatInput = ({ formState }) => {
           </div>
         )}
         <form onSubmit={handleSubmit} ref={formRef}>
-          <Upload setImg={setImg} />
-          <input id="file" type="file" multiple={false} hidden />
-          <input type="text" name="text" placeholder={img.isLoading ? "Waiting for image..." : "Ask anything or request assistance..."} autoFocus disabled={img.isLoading} />
+          <Upload ref={uploadRef} setImg={setImg} />
+          <input
+            type="text"
+            name="text"
+            placeholder={img.isLoading ? "Waiting for image..." : "Ask anything or request assistance..."}
+            autoFocus
+            disabled={img.isLoading}
+            onPaste={handlePaste}
+          />
           <button type="submit" disabled={isThinking || img.isLoading} aria-label="Send message">
             <span className="sendIcon">↑</span>
           </button>

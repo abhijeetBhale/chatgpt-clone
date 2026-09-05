@@ -235,13 +235,23 @@ const NewPrompt = ({ data, onFormReady }) => {
   }, [isThinking, img, userAvatar]);
 
   // Auto-send when image finishes uploading (if user pressed Enter during upload)
+  // Also clear pending text on upload error so user can retry
   useEffect(() => {
-    if (pendingText.current && img.dbData?.filePath && !img.isLoading) {
+    if (!pendingText.current) return;
+
+    if (img.isLoading) return;
+
+    if (img.error) {
+      pendingText.current = null;
+      return;
+    }
+
+    if (img.dbData?.filePath) {
       const text = pendingText.current;
       pendingText.current = null;
       add(text, false);
     }
-  }, [img.dbData, img.isLoading]);
+  }, [img.dbData, img.isLoading, img.error]);
 
   // Copy to clipboard
   const handleCopy = (text) => {
@@ -460,6 +470,19 @@ const NewPrompt = ({ data, onFormReady }) => {
             <img src={userAvatar || "/human1.jpeg"} alt="You" />
           </div>
           <div className="message-content-wrapper">
+            {img.dbData?.filePath && (
+              <div className="message-attachment">
+                <IKImage
+                  urlEndpoint={import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT}
+                  publicKey={import.meta.env.VITE_IMAGEKIT_URL_PUBLIC_KEY}
+                  path={img.dbData?.filePath}
+                  width="300"
+                  transformation={[{ width: 300 }]}
+                  loading="lazy"
+                  lqip={{ active: true, quality: 20 }}
+                />
+              </div>
+            )}
             <div className="message">{question}</div>
           </div>
         </div>
