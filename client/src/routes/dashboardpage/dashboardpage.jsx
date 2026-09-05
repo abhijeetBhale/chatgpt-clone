@@ -1,7 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
+import { IKImage } from "imagekitio-react";
+import Upload from "../../components/upload/upload";
+import UpgradeModal from "../../components/upgradeModal/upgradeModal";
 import './dashboardpage.css';
 
 const DashboardPage = () => {
@@ -9,9 +12,17 @@ const DashboardPage = () => {
   const navigate = useNavigate();
   const { getToken } = useAuth();
   const [inputText, setInputText] = useState("");
+  const [img, setImg] = useState({
+    isLoading: false,
+    error: "",
+    dbData: {},
+    aiData: {},
+  });
+  const [upgradeModal, setUpgradeModal] = useState({ isOpen: false, details: null });
+  const uploadRef = useRef(null);
 
   const mutation = useMutation({
-    mutationFn: async (text) => {
+    mutationFn: async ({ text, imgPath }) => {
       const token = await getToken();
 
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/chats`, {
@@ -20,7 +31,7 @@ const DashboardPage = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, img: imgPath }),
       });
 
       if (!res.ok) {
@@ -37,14 +48,52 @@ const DashboardPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
+    if (!inputText.trim() && !img.dbData?.filePath) return;
 
-    mutation.mutate(inputText);
+    // If image is still uploading, wait
+    if (img.isLoading) return;
+
+    const text = inputText.trim() || "Describe this image";
+    const imgPath = img.dbData?.filePath || undefined;
+
+    mutation.mutate({ text, imgPath });
+
+    // Reset image state after sending
+    setImg({ isLoading: false, error: "", dbData: {}, aiData: {} });
+    setInputText("");
   };
 
   const handleOptionClick = (promptText) => {
     setInputText(promptText);
   };
+
+  const handleRemoveImage = useCallback(() => {
+    setImg({ isLoading: false, error: "", dbData: {}, aiData: {} });
+  }, []);
+
+  const handlePaste = useCallback((e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file && uploadRef.current?.uploadFile) {
+          uploadRef.current.uploadFile(file);
+        }
+        return;
+      }
+    }
+  }, []);
+
+  const handleUpgradeRequired = useCallback((details) => {
+    setUpgradeModal({ isOpen: true, details });
+  }, []);
+
+  const closeUpgradeModal = useCallback(() => {
+    setUpgradeModal({ isOpen: false, details: null });
+  }, []);
 
   return (
     <div className="dashboardPage">
@@ -95,17 +144,46 @@ const DashboardPage = () => {
       </div>
 
       <div className="formContainer">
+        {img.dbData?.filePath && (
+          <div className="dashboardImagePreview">
+            <IKImage
+              urlEndpoint={import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT}
+              publicKey={import.meta.env.VITE_IMAGEKIT_URL_PUBLIC_KEY}
+              path={img.dbData?.filePath}
+              width="120"
+              transformation={[{ width: 120 }]}
+            />
+            <button
+              type="button"
+              className="dashboardImageRemove"
+              onClick={handleRemoveImage}
+              title="Remove image"
+            >
+              ×
+            </button>
+          </div>
+        )}
+        {img.isLoading && (
+          <div className="dashboardImagePreview">
+            <div className="dashboardImageLoading">Uploading image...</div>
+          </div>
+        )}
+        {img.error && (
+          <div className="dashboardImageError">{img.error}</div>
+        )}
         <form onSubmit={handleSubmit}>
+          <Upload ref={uploadRef} setImg={setImg} onUpgradeRequired={handleUpgradeRequired} />
           <input 
             type="text" 
             name="text" 
-            placeholder="Ask anything or request code assistance..."
+            placeholder={img.isLoading ? "Waiting for image..." : "Ask anything or attach an image..."}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            disabled={mutation.isPending}
+            disabled={mutation.isPending || img.isLoading}
             autoFocus
+            onPaste={handlePaste}
           />
-          <button type="submit" disabled={mutation.isPending || !inputText.trim()}>
+          <button type="submit" disabled={mutation.isPending || img.isLoading || (!inputText.trim() && !img.dbData?.filePath)}>
             {mutation.isPending ? (
               <span className="buttonSpinner"></span>
             ) : (
@@ -114,6 +192,12 @@ const DashboardPage = () => {
           </button>
         </form>
       </div>
+      <UpgradeModal
+        isOpen={upgradeModal.isOpen}
+        onClose={closeUpgradeModal}
+        currentPlan={upgradeModal.details?.currentPlan}
+        maxFileSizeMB={upgradeModal.details?.maxFileSizeMB}
+      />
     </div>
   );
 };

@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     PRO_RATE_LIMIT_MUTATE: str = "120/minute"
     PRO_RATE_LIMIT_GLOBAL: str = "400/minute"
 
+    # File size limits per plan (in bytes)
+    FREE_MAX_FILE_SIZE: int = 2 * 1024 * 1024   # 2 MB
+    PRO_MAX_FILE_SIZE: int = 20 * 1024 * 1024    # 20 MB
+
     class Config:
         env_file = ".env"
         extra = "ignore"

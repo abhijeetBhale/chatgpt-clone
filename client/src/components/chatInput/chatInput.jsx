@@ -1,11 +1,13 @@
-import React, { useRef, useCallback } from "react";
+import React, { useRef, useCallback, useState } from "react";
 import "./chatInput.css";
 import Upload from "../upload/upload";
+import UpgradeModal from "../upgradeModal/upgradeModal";
 import { IKImage } from "imagekitio-react";
 
 const ChatInput = ({ formState }) => {
   const { handleSubmit, formRef, isThinking, img, setImg } = formState || {};
   const uploadRef = useRef(null);
+  const [upgradeModal, setUpgradeModal] = useState({ isOpen: false, details: null });
 
   const handleRemoveImage = useCallback(() => {
     setImg({ isLoading: false, error: "", dbData: {}, aiData: {} });
@@ -25,6 +27,14 @@ const ChatInput = ({ formState }) => {
         return;
       }
     }
+  }, []);
+
+  const handleUpgradeRequired = useCallback((details) => {
+    setUpgradeModal({ isOpen: true, details });
+  }, []);
+
+  const closeUpgradeModal = useCallback(() => {
+    setUpgradeModal({ isOpen: false, details: null });
   }, []);
 
   if (!handleSubmit) return null;
@@ -58,8 +68,11 @@ const ChatInput = ({ formState }) => {
             <div className="chatInputPreviewLoading">Uploading image...</div>
           </div>
         )}
+        {img.error && (
+          <div className="chatInputError">{img.error}</div>
+        )}
         <form onSubmit={handleSubmit} ref={formRef}>
-          <Upload ref={uploadRef} setImg={setImg} />
+          <Upload ref={uploadRef} setImg={setImg} onUpgradeRequired={handleUpgradeRequired} />
           <input
             type="text"
             name="text"
@@ -73,6 +86,12 @@ const ChatInput = ({ formState }) => {
           </button>
         </form>
       </div>
+      <UpgradeModal
+        isOpen={upgradeModal.isOpen}
+        onClose={closeUpgradeModal}
+        currentPlan={upgradeModal.details?.currentPlan}
+        maxFileSizeMB={upgradeModal.details?.maxFileSizeMB}
+      />
     </div>
   );
 };

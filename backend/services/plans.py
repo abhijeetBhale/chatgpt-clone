@@ -49,3 +49,8 @@ def mutate_limit() -> str:
 def global_limit() -> str:
     """slowapi limit provider: global default for undecorated routes."""
     return _limit(settings.RATE_LIMIT_GLOBAL, settings.PRO_RATE_LIMIT_GLOBAL)
+
+
+def max_file_size() -> int:
+    """Return the maximum upload file size in bytes for the current plan."""
+    return settings.PRO_MAX_FILE_SIZE if current_plan.get() == PRO else settings.FREE_MAX_FILE_SIZE

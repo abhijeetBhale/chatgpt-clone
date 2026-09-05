@@ -62,6 +62,16 @@
   padding: 4px 0;
 }
 
+.chatInputError {
+  font-size: 13px;
+  color: #ef4444;
+  padding: 8px 12px;
+  margin: 0 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: var(--radius-sm, 8px);
+}
+
 .chatInputInner form {
   width: 100%;
   display: flex;
