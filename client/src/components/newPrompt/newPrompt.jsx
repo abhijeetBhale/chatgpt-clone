@@ -372,18 +372,18 @@ const NewPrompt = ({ data, onFormReady }) => {
           <div
             className={
               message.role === "user"
-                ? "message-wrapper user"
-                : "message-wrapper ai"
+                ? "message-wrapper chat-message--user user"
+                : "message-wrapper chat-message--assistant ai"
             }
           >
-            <div className="message-avatar">
+            <div className="message-avatar chat-message__avatar">
               <img
                 src={message.role === "user" ? (userAvatar || "/human1.jpeg") : "/logo.png"}
                 alt={message.role === "user" ? "You" : "AI"}
               />
             </div>
             {message.role === "user" ? (
-              <div className="message-content-wrapper">
+              <div className="message-content-wrapper chat-message__body">
                 {editingIndex === i ? (
                   <div className="message editing">
                     <textarea
@@ -416,10 +416,10 @@ const NewPrompt = ({ data, onFormReady }) => {
                         />
                       </div>
                     )}
-                    <div className="message">
+                    <div className="message markdown chat-message__bubble">
                       <Markdown remarkPlugins={[remarkGfm]}>{message.parts[0].text}</Markdown>
                     </div>
-                    <div className="message-actions">
+                    <div className="message-actions chat-message__actions">
                       <button className="action-btn" onClick={() => handleCopy(message.parts[0].text)} title="Copy">
                         <CopyIcon />
                       </button>
@@ -431,11 +431,11 @@ const NewPrompt = ({ data, onFormReady }) => {
                 )}
               </div>
             ) : (
-              <div className="message-content-wrapper">
-                <div className="message">
+              <div className="message-content-wrapper chat-message__body">
+                <div className="message markdown chat-message__content">
                   <Markdown remarkPlugins={[remarkGfm]}>{message.parts[0].text}</Markdown>
                 </div>
-                <div className="message-actions">
+                <div className="message-actions chat-message__actions">
                   <button 
                     className={`action-btn ${feedback[i] === 'like' ? 'active' : ''}`} 
                     onClick={() => handleFeedback(i, 'like')} 
@@ -465,11 +465,11 @@ const NewPrompt = ({ data, onFormReady }) => {
       {img.isLoading && <div className="loadingImage">Uploading image...</div>}
 
       {question && (
-        <div className="message-wrapper user">
-          <div className="message-avatar">
+        <div className="message-wrapper chat-message--user user">
+          <div className="message-avatar chat-message__avatar">
             <img src={userAvatar || "/human1.jpeg"} alt="You" />
           </div>
-          <div className="message-content-wrapper">
+          <div className="message-content-wrapper chat-message__body">
             {img.dbData?.filePath && (
               <div className="message-attachment">
                 <IKImage
@@ -483,14 +483,14 @@ const NewPrompt = ({ data, onFormReady }) => {
                 />
               </div>
             )}
-            <div className="message">{question}</div>
+            <div className="message chat-message__bubble">{question}</div>
           </div>
         </div>
       )}
 
       {isThinking && !answer && (
-        <div className="message-wrapper ai">
-          <div className="message-avatar">
+        <div className="message-wrapper chat-message--assistant ai">
+          <div className="message-avatar chat-message__avatar">
             <img src="/logo.png" alt="Boost AI" />
           </div>
           <div className="thinking-content">
@@ -504,11 +504,11 @@ const NewPrompt = ({ data, onFormReady }) => {
       )}
 
       {isRateLimited && (
-        <div className="message-wrapper ai">
-          <div className="message-avatar">
+        <div className="message-wrapper chat-message--assistant ai">
+          <div className="message-avatar chat-message__avatar">
             <img src="/logo.png" alt="Boost AI" />
           </div>
-          <div className="message-content-wrapper">
+          <div className="message-content-wrapper chat-message__body">
             <div className="rateLimitBanner">
               <strong>You&apos;ve hit your free plan limit.</strong>
               <span>Upgrade to Pro for up to 40 AI messages per minute.</span>
@@ -519,15 +519,15 @@ const NewPrompt = ({ data, onFormReady }) => {
       )}
 
       {answer && (
-        <div className="message-wrapper ai">
-          <div className="message-avatar">
+        <div className="message-wrapper chat-message--assistant ai">
+          <div className="message-avatar chat-message__avatar">
             <img src="/logo.png" alt="Boost AI" />
           </div>
-          <div className="message-content-wrapper">
-            <div className="message">
+          <div className="message-content-wrapper chat-message__body">
+            <div className="message markdown chat-message__content">
               <Markdown remarkPlugins={[remarkGfm]}>{answer}</Markdown>
             </div>
-            <div className="message-actions">
+            <div className="message-actions chat-message__actions">
               <button 
                 className={`action-btn ${feedback['streaming'] === 'like' ? 'active' : ''}`} 
                 onClick={() => handleFeedback('streaming', 'like')} 
@@ -552,7 +552,7 @@ const NewPrompt = ({ data, onFormReady }) => {
         </div>
       )}
 
-      <div className="endChat" ref={endRef}></div>
+      <div className="endChat chat-conversation__scroll-anchor" ref={endRef}></div>
     </>
   );
 };

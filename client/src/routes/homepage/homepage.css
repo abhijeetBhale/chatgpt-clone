@@ -4,42 +4,38 @@
   height: 100%;
   width: 100%;
   position: relative;
-  overflow-y: auto;
+  overflow: hidden;
   background-color: var(--color-canvas);
+}
+
+.homepagePlasmaBg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.3;
+  pointer-events: none;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 20%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 20%, transparent 70%);
 }
 
 .heroContainer {
   position: relative;
   z-index: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-4xl);
-  max-width: 1240px;
+  text-align: center;
+  gap: var(--spacing-lg);
+  max-width: 900px;
   width: 100%;
   margin: 0 auto;
   padding: var(--spacing-4xl) var(--spacing-xl);
   flex: 1;
+  justify-content: center;
   animation: fadeInUp 0.5s var(--transition-normal);
 
-  @media screen and (max-width: 1024px) {
-    flex-direction: column;
-    justify-content: center;
-    gap: var(--spacing-2xl);
+  @media screen and (max-width: 768px) {
     padding: var(--spacing-2xl) var(--spacing-xl);
-    text-align: center;
-  }
-}
-
-.heroContainer .left {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--spacing-lg);
-
-  @media screen and (max-width: 1024px) {
-    align-items: center;
   }
 }
 
@@ -54,20 +50,35 @@
 
 .heroDisplayTitle {
   font-family: var(--font-display);
-  font-size: 64px;
-  font-weight: 400;
+  font-size: 72px;
+  font-weight: 700;
   line-height: 1.05;
-  letter-spacing: -1.8px;
+  letter-spacing: -2.4px;
   color: var(--color-ink);
-  max-width: 620px;
+  max-width: 740px;
+  background: linear-gradient(135deg, var(--color-ink) 0%, var(--color-accent-sunset-soft) 50%, var(--color-ink) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmerTitle 4s ease-in-out infinite;
 
   @media screen and (max-width: 1280px) {
-    font-size: 48px;
-    letter-spacing: -1.2px;
+    font-size: 56px;
+    letter-spacing: -1.6px;
   }
   @media screen and (max-width: 768px) {
-    font-size: 34px;
-    letter-spacing: -0.6px;
+    font-size: 40px;
+    letter-spacing: -1px;
+  }
+}
+
+@keyframes shimmerTitle {
+  0%, 100% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 200% center;
   }
 }
 
@@ -77,7 +88,7 @@
   font-weight: 400;
   line-height: 1.55;
   color: var(--color-body);
-  max-width: 520px;
+  max-width: 560px;
 
   @media screen and (max-width: 768px) {
     font-size: 15px;
@@ -156,111 +167,6 @@
   color: var(--color-ink);
   background-color: var(--color-canvas-soft);
   border-color: var(--color-hairline-translucent);
-}
-
-/* Right Side Product Mockup Card */
-.heroContainer .right {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-}
-
-.mockupCard {
-  width: 100%;
-  max-width: 520px;
-  background-color: var(--color-canvas-card);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-hairline);
-  overflow: hidden;
-  position: relative;
-}
-
-.mockupHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px;
-  background-color: var(--color-canvas-soft);
-  border-bottom: 1px solid var(--color-hairline);
-}
-
-.windowDots {
-  display: flex;
-  gap: 6px;
-}
-
-.windowDots .dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-}
-
-.dot.red { background-color: #ff5f56; }
-.dot.yellow { background-color: #ffbd2e; }
-.dot.green { background-color: #27c93f; }
-
-.windowTitle {
-  font-family: var(--font-code);
-  font-size: 12px;
-  color: var(--color-muted);
-}
-
-.mockupBody {
-  padding: var(--spacing-lg);
-  min-height: 280px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  position: relative;
-}
-
-.codePreview {
-  font-family: var(--font-code);
-  font-size: 13px;
-  line-height: 1.7;
-  color: var(--color-ink);
-}
-
-.lineNum {
-  color: var(--color-muted-soft);
-  margin-right: 14px;
-  user-select: none;
-}
-
-.tokenKeyword { color: var(--color-accent-sunset); }
-.tokenString { color: var(--color-accent-breeze); }
-.tokenComment { color: var(--color-muted); font-style: italic; }
-
-.chatOverlay {
-  position: absolute;
-  bottom: 16px;
-  right: 16px;
-  left: 16px;
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: 12px 16px;
-  background-color: rgba(26, 28, 32, 0.95);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--color-hairline);
-  border-radius: var(--radius-sm);
-}
-
-.chatAvatar img {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 1px solid var(--color-hairline);
-}
-
-.chatBubble {
-  font-family: var(--font-body);
-  font-size: 13px;
-  color: var(--color-ink);
-  line-height: 1.4;
 }
 
 /* Footer Styling */
