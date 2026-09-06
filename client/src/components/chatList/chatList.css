@@ -464,3 +464,31 @@
 .planButton.primary:hover {
   opacity: 0.9;
 }
+
+/* AI Personality Button */
+.personalityBtn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-body);
+  background: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  width: 100%;
+  text-align: left;
+}
+
+.personalityBtn:hover {
+  background-color: var(--color-canvas-card);
+  color: var(--color-ink);
+}
+
+.personalityBtn .svgNavIcon {
+  color: var(--color-accent-sunset);
+}

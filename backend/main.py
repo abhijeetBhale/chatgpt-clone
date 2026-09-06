@@ -41,6 +41,112 @@ async def lifespan(app: FastAPI):
             except Exception:
                 pass  # Column already exists
 
+        # Create new tables for Personality & Learning System
+        new_tables = [
+            """
+            CREATE TABLE IF NOT EXISTS user_preferences (
+                user_id VARCHAR PRIMARY KEY,
+                tone VARCHAR(32) NOT NULL DEFAULT 'balanced',
+                response_length VARCHAR(32) NOT NULL DEFAULT 'adaptive',
+                expertise_level VARCHAR(32) NOT NULL DEFAULT 'auto',
+                humor_level FLOAT NOT NULL DEFAULT 0.5,
+                feedback_count INTEGER NOT NULL DEFAULT 0,
+                last_adapted_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS user_memory (
+                id SERIAL PRIMARY KEY,
+                user_id VARCHAR NOT NULL,
+                memory_type VARCHAR(32) NOT NULL,
+                key VARCHAR(128) NOT NULL,
+                value TEXT NOT NULL DEFAULT '',
+                confidence FLOAT NOT NULL DEFAULT 0.5,
+                source VARCHAR(32) NOT NULL DEFAULT 'inferred',
+                created_at TIMESTAMP DEFAULT NOW(),
+                last_used_at TIMESTAMP DEFAULT NOW(),
+                expires_at TIMESTAMP
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS feedback_analytics (
+                id SERIAL PRIMARY KEY,
+                user_id VARCHAR,
+                category VARCHAR(64) NOT NULL,
+                pattern TEXT NOT NULL DEFAULT '',
+                positive_count INTEGER NOT NULL DEFAULT 0,
+                negative_count INTEGER NOT NULL DEFAULT 0,
+                last_updated TIMESTAMP DEFAULT NOW()
+            )
+            """,
+        ]
+        for table_sql in new_tables:
+            try:
+                await conn.execute(text(table_sql))
+            except Exception:
+                pass  # Table already exists
+
+        # Create indexes for new tables
+        indexes = [
+            "CREATE INDEX IF NOT EXISTS idx_user_preferences_user_id ON user_preferences(user_id)",
+            "CREATE INDEX IF NOT EXISTS idx_user_memory_user_id ON user_memory(user_id)",
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_user_memory_type_key ON user_memory(user_id, memory_type, key)",
+            "CREATE INDEX IF NOT EXISTS idx_feedback_analytics_user_category ON feedback_analytics(user_id, category)",
+        ]
+        for index_sql in indexes:
+            try:
+                await conn.execute(text(index_sql))
+            except Exception:
+                pass  # Index already exists
+
+        # Create RAG tables
+        rag_tables = [
+            """
+            CREATE TABLE IF NOT EXISTS conversation_embeddings (
+                id SERIAL PRIMARY KEY,
+                user_id VARCHAR NOT NULL,
+                chat_id VARCHAR NOT NULL,
+                chunk_text TEXT NOT NULL,
+                chunk_type VARCHAR(32) NOT NULL,
+                embedding JSONB NOT NULL,
+                metadata_json JSONB NOT NULL DEFAULT '{}',
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS conversation_summaries (
+                id SERIAL PRIMARY KEY,
+                user_id VARCHAR NOT NULL,
+                chat_id VARCHAR NOT NULL UNIQUE,
+                summary TEXT NOT NULL DEFAULT '',
+                key_topics JSONB NOT NULL DEFAULT '[]',
+                extracted_patterns JSONB NOT NULL DEFAULT '{}',
+                message_count INTEGER NOT NULL DEFAULT 0,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+            """,
+        ]
+        for table_sql in rag_tables:
+            try:
+                await conn.execute(text(table_sql))
+            except Exception:
+                pass  # Table already exists
+
+        # Create indexes for RAG tables
+        rag_indexes = [
+            "CREATE INDEX IF NOT EXISTS idx_embedding_user_id ON conversation_embeddings(user_id)",
+            "CREATE INDEX IF NOT EXISTS idx_embedding_chat_id ON conversation_embeddings(chat_id)",
+            "CREATE INDEX IF NOT EXISTS idx_summary_user_id ON conversation_summaries(user_id)",
+        ]
+        for index_sql in rag_indexes:
+            try:
+                await conn.execute(text(index_sql))
+            except Exception:
+                pass  # Index already exists
+
         # Seed default feature flags (idempotent). New flags start OFF;
         # toggle them on from the Feature Flags page (/admin).
         seed_flags = [

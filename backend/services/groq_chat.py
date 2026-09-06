@@ -18,6 +18,8 @@ from services.llm_router import stream_chat_response as _sync_stream  # noqa: E4
 async def stream_chat_response(
     history: list[dict],
     raw_history: list[dict] | None = None,
+    user_id: str | None = None,
+    system_prompt: str | None = None,
 ) -> AsyncIterator[str]:
     """Yield text chunks from the best available LLM provider.
 
@@ -28,6 +30,8 @@ async def stream_chat_response(
         history: Text-only conversation history [{role, content}].
         raw_history: Full chat history from DB with possible ``img`` fields.
                      Used by the router to detect images and route to vision.
+        user_id: Optional user ID for personalized prompts.
+        system_prompt: Optional pre-built system prompt (from personality engine).
     """
     loop = asyncio.get_running_loop()
     queue: asyncio.Queue = asyncio.Queue()
@@ -35,7 +39,7 @@ async def stream_chat_response(
     def _worker():
         try:
             with _llm_semaphore:
-                for chunk in _sync_stream(history, raw_history):
+                for chunk in _sync_stream(history, raw_history, user_id, system_prompt):
                     loop.call_soon_threadsafe(queue.put_nowait, chunk)
             loop.call_soon_threadsafe(queue.put_nowait, None)
         except Exception as exc:

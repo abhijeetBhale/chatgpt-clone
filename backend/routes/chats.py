@@ -222,10 +222,43 @@ async def send_message(
         for msg in chat.history
     ]
 
+    # Build RAG-enhanced system prompt
+    system_prompt = None
+    try:
+        from services.rag_context import get_rag_context_service
+        rag_service = get_rag_context_service(db)
+        
+        # Get the user's latest message for context retrieval
+        user_message = ""
+        if body.question:
+            user_message = body.question
+        elif chat.history:
+            last_user_msg = next(
+                (m for m in reversed(chat.history) if m.get("role") == "user"), 
+                None
+            )
+            if last_user_msg:
+                user_message = last_user_msg.get("parts", [{}])[0].get("text", "")
+        
+        system_prompt = await rag_service.build_rag_enhanced_prompt(
+            user_id=user_id,
+            user_message=user_message,
+            conversation_history=conversation_history,
+            base_prompt="You are Boost AI, an advanced AI assistant platform built by Abhijeet Bhale.",
+            current_chat_id=str(chat_id)
+        )
+    except Exception as exc:
+        log.warning("Failed to build RAG prompt: %s — using default", exc)
+
     async def event_generator():
         accumulated = ""
         try:
-            async for chunk in stream_chat_response(conversation_history, chat.history):
+            async for chunk in stream_chat_response(
+                conversation_history, 
+                chat.history,
+                user_id=user_id,
+                system_prompt=system_prompt
+            ):
                 accumulated += chunk
                 yield f"data: {json.dumps({'content': chunk})}\n\n"
 
@@ -238,6 +271,20 @@ async def send_message(
                     .values(history=new_history)
                 )
                 await db.commit()
+
+                # Process conversation for RAG and auto-learning
+                try:
+                    from services.rag_context import get_rag_context_service
+                    rag_service = get_rag_context_service(db)
+                    await rag_service.process_conversation_turn(
+                        user_id=user_id,
+                        chat_id=str(chat_id),
+                        user_message=body.question or "",
+                        ai_response=accumulated,
+                        conversation_history=chat.history
+                    )
+                except Exception as exc:
+                    log.warning("Failed to process RAG/learning: %s", exc)
 
             await cache.delete("chat", f"{user_id}:{chat_id}")
 
@@ -289,9 +336,42 @@ async def update_feedback(
     )
     await db.commit()
 
+    # Process feedback for learning
+    learning_result = None
+    try:
+        from services.learning import get_feedback_analyzer
+        analyzer = get_feedback_analyzer(db)
+        
+        # Extract user message and AI response for learning
+        message_index = body.message_index
+        if 0 <= message_index < len(chat.history):
+            # Get the user message (previous message)
+            user_message = ""
+            if message_index > 0:
+                prev_msg = chat.history[message_index - 1]
+                user_message = prev_msg.get("parts", [{}])[0].get("text", "")
+            
+            # Get the AI response
+            ai_response = chat.history[message_index].get("parts", [{}])[0].get("text", "")
+            
+            learning_result = await analyzer.process_feedback(
+                user_id=user_id,
+                chat_id=str(chat_id),
+                message_index=message_index,
+                feedback_type=body.feedback_type,
+                response_text=ai_response,
+                user_message=user_message
+            )
+    except Exception as exc:
+        log.warning("Failed to process feedback for learning: %s", exc)
+
     await cache.delete("chat", f"{user_id}:{chat_id}")
 
-    return {"status": "ok", "feedback": feedback}
+    return {
+        "status": "ok", 
+        "feedback": feedback,
+        "learning": learning_result
+    }
 
 
 @router.put("/{chat_id}/share")

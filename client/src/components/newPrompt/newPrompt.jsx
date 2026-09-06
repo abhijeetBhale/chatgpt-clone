@@ -8,6 +8,7 @@ import remarkGfm from "remark-gfm";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth, useUser } from "@clerk/clerk-react";
 import { useFeatureFlag } from "../../hooks/useFeatureFlags";
+import SiriWave from "../ui/siri-wave";
 
 // SVG Icons
 const CopyIcon = () => (
@@ -376,12 +377,6 @@ const NewPrompt = ({ data, onFormReady }) => {
                 : "message-wrapper chat-message--assistant ai"
             }
           >
-            <div className="message-avatar chat-message__avatar">
-              <img
-                src={message.role === "user" ? (userAvatar || "/human1.jpeg") : "/logo.png"}
-                alt={message.role === "user" ? "You" : "AI"}
-              />
-            </div>
             {message.role === "user" ? (
               <div className="message-content-wrapper chat-message__body">
                 {editingIndex === i ? (
@@ -466,9 +461,6 @@ const NewPrompt = ({ data, onFormReady }) => {
 
       {question && (
         <div className="message-wrapper chat-message--user user">
-          <div className="message-avatar chat-message__avatar">
-            <img src={userAvatar || "/human1.jpeg"} alt="You" />
-          </div>
           <div className="message-content-wrapper chat-message__body">
             {img.dbData?.filePath && (
               <div className="message-attachment">
@@ -489,25 +481,20 @@ const NewPrompt = ({ data, onFormReady }) => {
       )}
 
       {isThinking && !answer && (
-        <div className="message-wrapper chat-message--assistant ai">
-          <div className="message-avatar chat-message__avatar">
-            <img src="/logo.png" alt="Boost AI" />
-          </div>
+        <div className="message-wrapper chat-message--assistant ai thinking-wrapper">
           <div className="thinking-content">
-            <div className="thinking-dots">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
+            <SiriWave 
+              variant="fluid-dots" 
+              size={80} 
+              renderScale={0.5}
+              className="thinking-siri-wave"
+            />
           </div>
         </div>
       )}
 
       {isRateLimited && (
         <div className="message-wrapper chat-message--assistant ai">
-          <div className="message-avatar chat-message__avatar">
-            <img src="/logo.png" alt="Boost AI" />
-          </div>
           <div className="message-content-wrapper chat-message__body">
             <div className="rateLimitBanner">
               <strong>You&apos;ve hit your free plan limit.</strong>
@@ -520,9 +507,6 @@ const NewPrompt = ({ data, onFormReady }) => {
 
       {answer && (
         <div className="message-wrapper chat-message--assistant ai">
-          <div className="message-avatar chat-message__avatar">
-            <img src="/logo.png" alt="Boost AI" />
-          </div>
           <div className="message-content-wrapper chat-message__body">
             <div className="message markdown chat-message__content">
               <Markdown remarkPlugins={[remarkGfm]}>{answer}</Markdown>

@@ -122,6 +122,54 @@ SYSTEM_PROMPT = (
 )
 
 
+def get_system_prompt(user_id: str = None, history: list[dict] = None) -> str:
+    """Get the system prompt, optionally enhanced with personality.
+    
+    Args:
+        user_id: Optional user ID for personalized prompt
+        history: Optional conversation history for context detection
+        
+    Returns:
+        System prompt string
+    """
+    if not user_id:
+        return SYSTEM_PROMPT
+    
+    # Try to use personality engine if available
+    try:
+        from database import async_session
+        from services.personality import get_personality_engine
+        import asyncio
+        
+        # For sync context, we'll return base prompt
+        # Personality enhancement happens in the async route handler
+        return SYSTEM_PROMPT
+    except Exception:
+        return SYSTEM_PROMPT
+
+
+async def get_system_prompt_async(user_id: str, history: list[dict]) -> str:
+    """Get an enhanced system prompt with personality (async version).
+    
+    Args:
+        user_id: User ID for personalized prompt
+        history: Conversation history for context detection
+        
+    Returns:
+        Enhanced system prompt with personality adaptations
+    """
+    try:
+        from database import async_session
+        from services.personality import get_personality_engine
+        
+        async with async_session() as db:
+            engine = get_personality_engine(db)
+            return await engine.build_system_prompt(user_id, history, SYSTEM_PROMPT)
+    except Exception as exc:
+        log.warning("Failed to build personalized prompt: %s — using base prompt", exc)
+        return SYSTEM_PROMPT
+
+
 # ---------------------------------------------------------------------------
 # Streaming implementations per provider
 # ---------------------------------------------------------------------------
@@ -354,13 +402,13 @@ def _fetch_image_as_base64(imagekit_url: str) -> str:
         return ""
 
 
-def _build_vision_messages(history: list[dict]) -> list[dict]:
+def _build_vision_messages(history: list[dict], system_prompt: str = None) -> list[dict]:
     """Build messages array with image content for vision models.
 
     Converts messages with 'img' field into OpenAI-compatible multimodal
     content format with base64-encoded images (required by Cerebras).
     """
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    messages = [{"role": "system", "content": system_prompt or SYSTEM_PROMPT}]
 
     for msg in history:
         role = "assistant" if msg.get("role") == "model" else "user"
@@ -396,6 +444,8 @@ def _build_vision_messages(history: list[dict]) -> list[dict]:
 def stream_chat_response(
     history: list[dict],
     raw_history: list[dict] | None = None,
+    user_id: str | None = None,
+    system_prompt: str | None = None,
 ) -> Iterator[str]:
     """Yield text chunks from the best available LLM provider.
 
@@ -407,22 +457,27 @@ def stream_chat_response(
         history: Text-only conversation history [{role, content}].
         raw_history: Full chat history from DB with ``img`` fields.
                      Used to detect images and build vision messages.
+        user_id: Optional user ID for personalized prompts.
+        system_prompt: Optional pre-built system prompt (from personality engine).
     """
     # Use raw_history for image detection (it has the img fields)
     source = raw_history if raw_history is not None else history
     has_images = _has_images(source)
     
-    log.info("stream_chat_response called: history_len=%d, raw_history_len=%d, has_images=%s, CEREBRAS_API_KEY=%s", 
-             len(history), len(raw_history) if raw_history else 0, has_images, bool(settings.CEREBRAS_API_KEY))
+    log.info("stream_chat_response called: history_len=%d, raw_history_len=%d, has_images=%s, user_id=%s", 
+             len(history), len(raw_history) if raw_history else 0, has_images, user_id)
     if raw_history:
         for i, msg in enumerate(raw_history):
             log.debug("raw_history[%d]: role=%s, has_img=%s, img=%s", 
                      i, msg.get("role"), bool(msg.get("img")), msg.get("img"))
 
+    # Use provided system prompt or default
+    active_prompt = system_prompt or SYSTEM_PROMPT
+
     # If images present, try vision model first
     if has_images and (settings.GROQ_API_KEY or settings.OPENROUTER_API_KEY or settings.CEREBRAS_API_KEY):
         try:
-            messages = _build_vision_messages(source)
+            messages = _build_vision_messages(source, active_prompt)
             log.info("Routing to vision provider — images detected, %d messages", len(messages))
             chunks = list(_stream_cerebras_vision(messages))
             for chunk in chunks:
@@ -432,7 +487,7 @@ def stream_chat_response(
             log.warning("Vision provider failed: %s — falling back to text models", exc, exc_info=True)
 
     # Standard text-only routing
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + history
+    messages = [{"role": "system", "content": active_prompt}] + history
 
     last_error: Optional[Exception] = None
 
