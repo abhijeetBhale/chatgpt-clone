@@ -9,13 +9,12 @@ engine = create_async_engine(
     pool_size=20,
     max_overflow=10,
     pool_pre_ping=True,
+    connect_args={"prepare_threshold": 0},
 )
 
 
-# Ensure search_path is set to 'public' for Supabase connections
-# This fixes the "permission denied for schema realtime" error
 @event.listens_for(engine.sync_engine, "connect")
-def set_search_path(dbapi_connection, connection_record):
+def _on_connect(dbapi_connection, connection_record):
     cursor = dbapi_connection.cursor()
     cursor.execute("SET search_path TO public")
     cursor.close()

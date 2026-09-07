@@ -276,13 +276,19 @@ async def send_message(
                 try:
                     from services.rag_context import get_rag_context_service
                     rag_service = get_rag_context_service(db)
+                    last_user_msg = next(
+                        (m for m in reversed(chat.history) if m.get("role") == "user"),
+                        None
+                    )
+                    last_user_text = last_user_msg.get("parts", [{}])[0].get("text", "") if last_user_msg else ""
                     await rag_service.process_conversation_turn(
                         user_id=user_id,
                         chat_id=str(chat_id),
-                        user_message=body.question or "",
+                        user_message=last_user_text,
                         ai_response=accumulated,
                         conversation_history=chat.history
                     )
+                    await db.commit()
                 except Exception as exc:
                     log.warning("Failed to process RAG/learning: %s", exc)
 
